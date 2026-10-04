@@ -59,20 +59,32 @@ export const CaptainsLogModal: React.FC = () => {
                 CAPTAIN'S LOG
             </h2>
 
-            {/* Abas Alternáveis */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', justifyContent: 'center' }}>
                 <button
                     onClick={() => handleTabChange('RANKING')}
                     style={{
-                        width: '136px',
+                        width: '142px',
                         height: '40px',
                         border: 'none',
-                        background: `url('${tab === 'RANKING' ? '/assets/png/default/ui/menu/button_primary_pressed.png' : '/assets/png/default/ui/menu/button_secondary_normal.png'}') no-repeat center/contain`,
-                        color: '#fef08a',
-                        fontWeight: 800,
+                        backgroundImage: tab === 'RANKING'
+                            ? `url('/assets/png/default/ui/menu/button_primary_pressed.png')`
+                            : `url('/assets/png/default/ui/menu/button_secondary_normal.png')`,
+                        backgroundSize: '100% 100%',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundColor: 'transparent',
+                        color: tab === 'RANKING' ? '#422006' : '#ffffff',
+                        fontFamily: '"Arial Black", "Segoe UI Black", sans-serif',
+                        fontWeight: 900,
                         cursor: 'pointer',
-                        fontSize: '0.85rem',
-                        letterSpacing: '1px',
+                        fontSize: '10px',
+                        letterSpacing: '0.5px',
+                        textShadow: tab === 'RANKING' ? 'none' : '0px 1px 2px rgba(0, 0, 0, 0.95)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textTransform: 'uppercase',
+                        transform: tab === 'RANKING' ? 'scale(0.96)' : 'scale(1)',
+                        transition: 'all 0.1s ease'
                     }}
                 >
                     RANKING
@@ -80,15 +92,28 @@ export const CaptainsLogModal: React.FC = () => {
                 <button
                     onClick={() => handleTabChange('HISTORY')}
                     style={{
-                        width: '136px',
+                        width: '142px',
                         height: '40px',
                         border: 'none',
-                        background: `url('${tab === 'HISTORY' ? '/assets/png/default/ui/menu/button_primary_pressed.png' : '/assets/png/default/ui/menu/button_secondary_normal.png'}') no-repeat center/contain`,
-                        color: '#fef08a',
-                        fontWeight: 800,
+                        backgroundImage: tab === 'HISTORY'
+                            ? `url('/assets/png/default/ui/menu/button_primary_pressed.png')`
+                            : `url('/assets/png/default/ui/menu/button_secondary_normal.png')`,
+                        backgroundSize: '100% 100%',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundColor: 'transparent',
+                        color: tab === 'HISTORY' ? '#422006' : '#ffffff',
+                        fontFamily: '"Arial Black", "Segoe UI Black", sans-serif',
+                        fontWeight: 900,
                         cursor: 'pointer',
-                        fontSize: '0.85rem',
-                        letterSpacing: '1px',
+                        fontSize: '10px',
+                        letterSpacing: '0.5px',
+                        textShadow: tab === 'HISTORY' ? 'none' : '0px 1px 2px rgba(0, 0, 0, 0.95)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textTransform: 'uppercase',
+                        transform: tab === 'HISTORY' ? 'scale(0.96)' : 'scale(1)',
+                        transition: 'all 0.1s ease'
                     }}
                 >
                     MATCH HISTORY
@@ -105,145 +130,124 @@ export const CaptainsLogModal: React.FC = () => {
                 }}
             >
                 {tab === 'RANKING'
-                    ? '120 SECOND BATTLES · 3 SECOND SPAWN INTERVAL'
+                    ? '120 SECOND BATTLES · 3 SECOND SPA INTERVAL'
                     : 'CAPTAIN JACK · YOUR RECENT BATTLES'}
             </div>
 
-            {/* Tabela de Dados Perfeitamente Alinhada */}
-            <div
-                style={{
-                    width: '100%',
-                    maxWidth: '560px',
-                    minHeight: '210px',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    borderRadius: '8px',
-                    padding: '10px 16px',
-                    boxSizing: 'border-box',
-                    border: '1px solid rgba(51, 65, 85, 0.6)',
-                }}
-            >
+            <div style={{ width: '100%', maxWidth: '560px', flex: 1, display: 'flex', flexDirection: 'column', marginTop: '12px' }}>
                 {tab === 'RANKING' ? (
                     <div>
-                        <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns: '48px 1fr 64px 110px',
-                                color: '#94a3b8',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                paddingBottom: '6px',
-                                borderBottom: '1px solid #334155',
-                            }}
-                        >
-                            <span>RANK</span>
-                            <span>CAPTAIN</span>
-                            <span style={{ textAlign: 'center' }}>POINTS</span>
-                            <span style={{ textAlign: 'right' }}>PLAYED</span>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 2fr 1fr 1fr',
+                            padding: '0 16px',
+                            marginBottom: '8px',
+                            color: '#94a3b8',
+                            fontSize: '8px',
+                            letterSpacing: '1px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase'
+                        }}>
+                            <span>Rank</span>
+                            <span>Captain</span>
+                            <span style={{ textAlign: 'center' }}>Points</span>
+                            <span style={{ textAlign: 'right' }}>Played</span>
                         </div>
+
                         {loadingRanking ? (
-                            <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0' }}>
-                                Carregando marés...
+                            <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0', fontSize: '10px', fontWeight: 700, letterSpacing: '1px' }}>
+                                LOADING RANKINGS...
                             </div>
                         ) : (
-                            rankingData?.data.map((r) => (
-                                <div
-                                    key={r.rank}
-                                    style={{
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                {rankingData?.data.map((r, index) => (
+                                    <div key={r.rank} style={{
                                         display: 'grid',
-                                        gridTemplateColumns: '48px 1fr 64px 110px',
+                                        gridTemplateColumns: '1fr 2fr 1fr 1fr',
+                                        padding: '10px 16px',
+                                        backgroundColor: r.isPlayer ? 'rgba(234, 179, 8, 0.12)' : (index % 2 === 0 ? 'rgba(15, 23, 42, 0.4)' : 'transparent'),
+                                        border: r.isPlayer ? '1px solid rgba(234, 179, 8, 0.25)' : '1px solid transparent',
+                                        borderRadius: '4px',
                                         alignItems: 'center',
-                                        padding: '7px 0',
-                                        fontSize: '0.82rem',
-                                        color: r.isPlayer ? '#fde047' : '#f8fafc',
-                                        fontWeight: r.isPlayer ? 800 : 500,
-                                        borderBottom: '1px solid rgba(51, 65, 85, 0.4)',
-                                    }}
-                                >
-                                    <span>{r.rank.toString().padStart(2, '0')}</span>
-                                    <span>
-                                        {r.rank === 1 && <span style={{ color: '#fde047', marginRight: '4px' }}>★</span>}
-                                        {r.captain}{' '}
-                                        {r.isPlayer && (
-                                            <span
-                                                style={{
-                                                    fontSize: '0.62rem',
-                                                    background: '#eab308',
-                                                    color: '#000',
-                                                    padding: '1px 4px',
-                                                    borderRadius: '3px',
-                                                    marginLeft: '4px',
-                                                    fontWeight: 800,
-                                                }}
-                                            >
-                                                YOU
-                                            </span>
-                                        )}
-                                    </span>
-                                    <span style={{ textAlign: 'center' }}>{r.points}</span>
-                                    <span style={{ textAlign: 'right', color: '#94a3b8' }}>{r.playedAt}</span>
-                                </div>
-                            ))
+                                        fontSize: '11px',
+                                        fontWeight: r.isPlayer ? 800 : 700,
+                                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                                    }}>
+                                        <span style={{ color: r.isPlayer ? '#fde047' : '#e2e8f0' }}>
+                                            {r.rank.toString().padStart(2, '0')}
+                                        </span>
+                                        <span style={{ color: r.isPlayer ? '#fde047' : '#e2e8f0', display: 'flex', alignItems: 'center' }}>
+                                            {r.rank === 1 && <span style={{ color: '#fde047', marginRight: '6px' }}>★</span>}
+                                            {r.captain}
+                                            {r.isPlayer && (
+                                                <span style={{ fontSize: '7px', background: '#eab308', color: '#000', padding: '2px 4px', borderRadius: '3px', marginLeft: '6px', fontWeight: 900 }}>
+                                                    YOU
+                                                </span>
+                                            )}
+                                        </span>
+                                        <span style={{ textAlign: 'center', color: '#facc15' }}>{r.points}</span>
+                                        <span style={{ textAlign: 'right', color: '#94a3b8' }}>{r.playedAt}</span>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 ) : (
                     <div>
-                        <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns: '130px 60px 80px 1fr',
-                                color: '#94a3b8',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                paddingBottom: '6px',
-                                borderBottom: '1px solid #334155',
-                            }}
-                        >
-                            <span>DATE</span>
-                            <span style={{ textAlign: 'center' }}>POINTS</span>
-                            <span style={{ textAlign: 'center' }}>DURATION</span>
-                            <span style={{ textAlign: 'right' }}>RESULT</span>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr',
+                            padding: '0 16px',
+                            marginBottom: '8px',
+                            color: '#94a3b8',
+                            fontSize: '8px',
+                            letterSpacing: '1px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase'
+                        }}>
+                            <span>Date</span>
+                            <span style={{ textAlign: 'center' }}>Points</span>
+                            <span style={{ textAlign: 'center' }}>Duration</span>
+                            <span style={{ textAlign: 'right' }}>Result</span>
                         </div>
+
                         {loadingHistory ? (
-                            <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0' }}>
-                                Consultando o diário de bordo...
+                            <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0', fontSize: '10px', fontWeight: 700, letterSpacing: '1px' }}>
+                                LOADING HISTORY...
                             </div>
                         ) : (
-                            historyData?.data.map((h) => (
-                                <div
-                                    key={h.id}
-                                    style={{
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                {historyData?.data.map((h, index) => (
+                                    <div key={h.id} style={{
                                         display: 'grid',
-                                        gridTemplateColumns: '130px 60px 80px 1fr',
+                                        gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr',
+                                        padding: '10px 16px',
+                                        backgroundColor: index === 0 ? 'rgba(234, 179, 8, 0.12)' : (index % 2 === 0 ? 'rgba(15, 23, 42, 0.4)' : 'transparent'),
+                                        border: index === 0 ? '1px solid rgba(234, 179, 8, 0.25)' : '1px solid transparent',
+                                        borderRadius: '4px',
                                         alignItems: 'center',
-                                        padding: '7px 0',
-                                        fontSize: '0.82rem',
-                                        color: '#f8fafc',
-                                        borderBottom: '1px solid rgba(51, 65, 85, 0.4)',
-                                    }}
-                                >
-                                    <span>{h.date}</span>
-                                    <span style={{ textAlign: 'center', color: '#fef08a', fontWeight: 700 }}>
-                                        {h.points}
-                                    </span>
-                                    <span style={{ textAlign: 'center' }}>{h.duration}</span>
-                                    <span
-                                        style={{
+                                        fontSize: '11px',
+                                        fontWeight: 700,
+                                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                                    }}>
+                                        <span style={{ color: '#e2e8f0' }}>{h.date}</span>
+                                        <span style={{ textAlign: 'center', color: '#facc15' }}>{h.points}</span>
+                                        <span style={{ textAlign: 'center', color: '#e2e8f0' }}>{h.duration}</span>
+                                        <span style={{
                                             textAlign: 'right',
-                                            color: h.result === 'TIME UP' ? '#86efac' : '#fca5a5',
-                                            fontWeight: 700,
-                                        }}
-                                    >
-                                        {h.result}
-                                    </span>
-                                </div>
-                            ))
+                                            color: h.result === 'TIME UP' ? '#bef264' : '#fca5a5'
+                                        }}>
+                                            {h.result}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 )}
             </div>
 
-            {/* Paginação */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '12px 0 8px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', margin: '16px 0' }}>
                 <button
                     disabled={page <= 1}
                     onClick={() => {
@@ -251,19 +255,14 @@ export const CaptainsLogModal: React.FC = () => {
                         setPage((p) => Math.max(1, p - 1));
                     }}
                     style={{
-                        width: '26px',
-                        height: '26px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: page <= 1 ? 'default' : 'pointer',
+                        ...roundAdjustStyle,
                         opacity: page <= 1 ? 0.3 : 1,
-                        color: '#fef08a',
-                        fontWeight: 'bold',
+                        cursor: page <= 1 ? 'default' : 'pointer'
                     }}
                 >
                     ◀
                 </button>
-                <span style={{ color: '#cbd5e1', fontSize: '0.72rem', fontWeight: 700 }}>
+                <span style={{ color: '#cbd5e1', fontSize: '9px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
                     PAGE {page} OF {totalPages}
                 </span>
                 <button
@@ -273,21 +272,31 @@ export const CaptainsLogModal: React.FC = () => {
                         setPage((p) => Math.min(totalPages, p + 1));
                     }}
                     style={{
-                        width: '26px',
-                        height: '26px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: page >= totalPages ? 'default' : 'pointer',
+                        ...roundAdjustStyle,
                         opacity: page >= totalPages ? 0.3 : 1,
-                        color: '#fef08a',
-                        fontWeight: 'bold',
+                        cursor: page >= totalPages ? 'default' : 'pointer'
                     }}
                 >
                     ▶
                 </button>
             </div>
 
-            <WoodButton label="MAIN MENU" onClick={() => setScreen('MENU')} width={170} height={50} />
+            <WoodButton label="MAIN MENU" onClick={() => setScreen('MENU')} width={280} height={62} />
         </div>
     );
+};
+
+const roundAdjustStyle: React.CSSProperties = {
+    width: '32px',
+    height: '32px',
+    border: 'none',
+    background: "transparent url('/assets/png/default/ui/controls/button_round_normal.png') no-repeat center/contain",
+    color: '#fef3c7',
+    fontSize: '12px',
+    fontWeight: 900,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+    outline: 'none',
 };
