@@ -44,7 +44,6 @@ export const CaptainsLogModal: React.FC = () => {
                 alignItems: 'center',
                 padding: '38px 72px',
                 boxSizing: 'border-box',
-                boxShadow: '0 30px 70px rgba(0,0,0,0.9)',
                 userSelect: 'none',
             }}
         >
