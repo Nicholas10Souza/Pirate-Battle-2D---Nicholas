@@ -1,0 +1,41 @@
+{
+  "name": "pirate_battle",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Desenvolva um **shooter naval 2D com visão superior** usando React, TypeScript e PixiJS. O jogador deve navegar entre ilhas, enfrentar navios inimigos e acumular pontos até o fim da partida.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/junglegaming/game-developer-challenge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/junglegaming/game-developer-challenge/issues"
+  },
+  "homepage": "https://github.com/junglegaming/game-developer-challenge#readme",
+  "dependencies": {
+    "@tanstack/react-query": "^5.104.1",
+    "axios": "^1.20.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.51.0",
+    "pixi.js": "^8.22.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "msw": "^3.0.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2"
+  }
+}
