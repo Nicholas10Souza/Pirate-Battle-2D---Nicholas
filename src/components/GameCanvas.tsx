@@ -393,7 +393,7 @@ export const GameCanvas: React.FC = () => {
                 </div>
             </div>
 
-            {/* Marca d'água oficial Jungle Gaming */}
+            {/* Watermark */}
             <div
                 style={{
                     position: 'absolute',

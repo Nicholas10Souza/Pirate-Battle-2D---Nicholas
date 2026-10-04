@@ -113,14 +113,14 @@ export class Simulation {
             ship.position.y = Math.max(ship.radius, Math.min(this.height - ship.radius, nextY));
         }
 
-        // 4. Ciclo de Spawning de Inimigos[cite: 2]
+        // 4. Enemy spawning cycle
         this.spawnTimer += dt;
         if (this.spawnTimer >= this.config.spawnInterval && this.state.enemies.length < 5) {
             this.spawnTimer = 0;
             this.spawnEnemy();
         }
 
-        // 5. IA e Atualização dos Inimigos[cite: 2]
+        // 5. Enemy AI and updates
         for (let i = this.state.enemies.length - 1; i >= 0; i--) {
             const e = this.state.enemies[i];
             const dx = ship.position.x - e.position.x;
@@ -135,19 +135,19 @@ export class Simulation {
             e.rotation += Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), e.turnSpeed * dt);
 
             if (e.type === 'chaser') {
-                // Chaser avança diretamente para abalroamento[cite: 2]
+                // Chaser moves forward to ram
                 e.speed = e.maxSpeed;
                 e.position.x += Math.cos(e.rotation) * e.speed * dt;
                 e.position.y += Math.sin(e.rotation) * e.speed * dt;
 
-                // Dano de abalroamento no jogador[cite: 2]
+                // Ramming damage to player
                 if (dist < ship.radius + e.radius) {
                     ship.health -= 25;
                     e.health = 0; // Se destrói ao abalroar
                     callbacks?.onPlayerHit?.();
                 }
             } else if (e.type === 'shooter') {
-                // Shooter mantém distância segura e atira[cite: 2]
+                // Shooter maintains safe distance and fires
                 if (dist > 280) {
                     e.speed = e.maxSpeed;
                 } else if (dist < 180) {
@@ -166,7 +166,7 @@ export class Simulation {
                 }
             }
 
-            // Remove inimigos derrotados[cite: 2]
+            // Remove defeated enemies
             if (e.health <= 0) {
                 this.state.enemies.splice(i, 1);
                 this.state.score += e.type === 'chaser' ? 2 : 3;
@@ -174,7 +174,7 @@ export class Simulation {
             }
         }
 
-        // 6. Atualização de Projéteis e Colisões[cite: 2]
+        // 6. Projectile updates and collisions
         for (let i = this.state.projectiles.length - 1; i >= 0; i--) {
             const p = this.state.projectiles[i];
             p.lifeTime -= dt;
@@ -183,7 +183,7 @@ export class Simulation {
 
             let hit = false;
 
-            // Colisão de projétil com ilhas[cite: 2]
+            // Projectile collision with islands
             for (const island of this.state.islands) {
                 if (Math.hypot(p.position.x - island.position.x, p.position.y - island.position.y) < p.radius + island.radius) {
                     hit = true;
@@ -191,7 +191,7 @@ export class Simulation {
                 }
             }
 
-            // Projétil do jogador atingindo inimigos[cite: 2]
+            // Player projectile hitting enemies
             if (!hit && p.owner === 'player') {
                 for (const e of this.state.enemies) {
                     if (Math.hypot(p.position.x - e.position.x, p.position.y - e.position.y) < p.radius + e.radius) {
@@ -202,7 +202,7 @@ export class Simulation {
                 }
             }
 
-            // Projétil inimigo atingindo o jogador[cite: 2]
+            // Enemy projectile hitting player
             if (!hit && p.owner === 'enemy') {
                 if (Math.hypot(p.position.x - ship.position.x, p.position.y - ship.position.y) < p.radius + ship.radius) {
                     ship.health -= p.damage;
@@ -221,7 +221,7 @@ export class Simulation {
             }
         }
 
-        // 7. Derrota do jogador[cite: 2]
+        // 7. Player defeat
         if (ship.health <= 0) {
             ship.health = 0;
             this.state.isGameOver = true;
