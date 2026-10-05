@@ -20,10 +20,22 @@ export interface Decoration {
 
 export interface IslandMap {
     cells: LandCell[];
+    structures: LandCell[];
     decorations: Decoration[];
 }
 
-const MARGIN = 3; // células extras além da tela
+const FORTRESS: LandCell[] = [
+    { col: 4, row: 0, tileId: 15 },
+    { col: 4, row: 1, tileId: 15 },
+    { col: 4, row: 2, tileId: 93 },
+    { col: 5, row: 2, tileId: 76 },
+    { col: 6, row: 2, tileId: 16 },
+    { col: 7, row: 0, tileId: 31 },
+    { col: 7, row: 1, tileId: 15 },
+    { col: 7, row: 2, tileId: 94 },
+];
+
+const MARGIN = 3;
 
 function mulberry32(seed: number): () => number {
     let a = seed >>> 0;
@@ -61,7 +73,6 @@ export function buildIslandMap(
     }
     const isLand = (c: number, r: number): boolean => land.get(key(c, r)) ?? insideCircle(c, r);
 
-    // tira pontas de 1 célula
     let changed = true;
     while (changed) {
         changed = false;
@@ -95,7 +106,6 @@ export function buildIslandMap(
         if (s) return isGrass(c, r - 1) ? pick([55, 56]) : 34;
         if (w) return isGrass(c + 1, r) ? pick([22, 38]) : 17;
         if (e) return isGrass(c - 1, r) ? pick([25, 41]) : 19;
-        // 4 vizinhos de terra e uma diagonal de água
         if (!isLand(c + 1, r + 1)) return 36;
         if (!isLand(c - 1, r + 1)) return 37;
         if (!isLand(c + 1, r - 1)) return 52;
@@ -105,14 +115,16 @@ export function buildIslandMap(
 
     const cells: LandCell[] = [];
     const decorations: Decoration[] = [];
+    const structures = FORTRESS.filter((f) => isLand(f.col, f.row));
+    const taken = new Set(structures.map((f) => key(f.col, f.row)));
     for (let r = -MARGIN; r < rows + MARGIN; r++) {
         for (let c = -MARGIN; c < cols + MARGIN; c++) {
             if (!isLand(c, r)) continue;
             const tileId = tileFor(c, r);
-            // só o que aparece na tela
+
             if (c >= -1 && c <= cols && r >= -1 && r <= rows) cells.push({ col: c, row: r, tileId });
 
-            if (isGrass(c, r) && c >= 0 && c < cols && r >= 0 && r < rows) {
+            if (isGrass(c, r) && !taken.has(key(c, r)) && c >= 0 && c < cols && r >= 0 && r < rows) {
                 const roll = rnd();
                 if (roll < 0.2) {
                     decorations.push({
@@ -136,5 +148,5 @@ export function buildIslandMap(
             }
         }
     }
-    return { cells, decorations };
+    return { cells, structures, decorations };
 }

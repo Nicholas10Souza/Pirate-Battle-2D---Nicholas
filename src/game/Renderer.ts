@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Simulation } from './Simulation';
-import { buildIslandMap } from './TileMap';
+import { buildIslandMap, IslandMap } from './TileMap';
 
 const BASE = '/assets/png/default';
 const TILE = 48;
@@ -8,6 +8,7 @@ const TILE_SRC = 64;
 
 const SHIP_SKIN = { player: 3, chaser: 2, shooter: 5 } as const;
 const SHIP_SCALE = { player: 0.8, chaser: 0.72, shooter: 0.8 } as const;
+
 const BAR = { w: 160, h: 40, fillX: 24, fillW: 112, scale: 0.42, offsetY: 58 };
 
 const EXPLOSION_FRAMES = [1, 2, 3].map((n) => `${BASE}/effects/explosion_${n}.png`);
@@ -21,11 +22,6 @@ const url = {
     barGreen: `${BASE}/ui/hud/enemy_health_fill_green.png`,
     barRed: `${BASE}/ui/hud/enemy_health_fill_red.png`,
 };
-
-const TILE_IDS = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 22, 23, 24, 25, 33, 34, 35, 38, 39, 40, 41,
-    54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73,
-];
 
 class HealthBar {
     public readonly view = new PIXI.Container();
@@ -137,6 +133,7 @@ export class GameRenderer {
     private effects: Effect[] = [];
     private lastPlayerHealth = -1;
     private lastTimeRemaining = Infinity;
+    private islandMap: IslandMap | null = null;
 
     private isInitialized = false;
     private isDestroyed = false;
@@ -147,7 +144,12 @@ export class GameRenderer {
     }
 
     private t(path: string): PIXI.Texture {
-        return this.tex[path] ?? PIXI.Texture.EMPTY;
+        const texture = this.tex[path];
+        if (!texture) {
+            console.warn('textura não carregada:', path);
+            return PIXI.Texture.EMPTY;
+        }
+        return texture;
     }
 
     public async init(viewportMount: HTMLDivElement, width: number, height: number): Promise<void> {
@@ -155,7 +157,7 @@ export class GameRenderer {
             width,
             height,
             backgroundColor: 0x1f9bd0,
-            resolution: window.devicePixelRatio || 1,
+            resolution: Math.max(window.devicePixelRatio || 1, 2),
             autoDensity: true,
             antialias: true,
         });
@@ -181,14 +183,21 @@ export class GameRenderer {
             this.hudWorldContainer
         );
 
+        this.islandMap = buildIslandMap(this.sim.state.islands, width, height, TILE);
         await this.loadTextures();
         if (this.isDestroyed) return;
         this.buildScene(width, height);
     }
 
     private async loadTextures(): Promise<void> {
+        const tileIds = new Set<number>([73]);
+        const map = this.islandMap;
+        map?.cells.forEach((c) => tileIds.add(c.tileId));
+        map?.structures.forEach((c) => tileIds.add(c.tileId));
+        map?.decorations.forEach((d) => tileIds.add(d.tileId));
+
         const paths = [
-            ...TILE_IDS.map(url.tile),
+            ...[...tileIds].map(url.tile),
             url.ship(SHIP_SKIN.player),
             url.ship(SHIP_SKIN.chaser),
             url.ship(SHIP_SKIN.shooter),
@@ -214,7 +223,7 @@ export class GameRenderer {
         this.bgContainer.addChild(this.water);
 
         // ilhas
-        this.buildIslands(width, height);
+        this.buildIslands();
 
         // jogador
         this.playerView = this.makeShipView('player', url.barGreen);
@@ -232,9 +241,10 @@ export class GameRenderer {
         );
     }
 
-    private buildIslands(width: number, height: number): void {
+    private buildIslands(): void {
         this.islandsContainer.removeChildren().forEach((c) => c.destroy({ children: true }));
-        const map = buildIslandMap(this.sim.state.islands, width, height, TILE);
+        const map = this.islandMap;
+        if (!map) return;
         const s = TILE / TILE_SRC;
 
         const ground = new PIXI.Container();
@@ -246,6 +256,13 @@ export class GameRenderer {
         }
         this.islandsContainer.addChild(ground);
 
+        for (const cell of map.structures) {
+            const sp = new PIXI.Sprite(this.t(url.tile(cell.tileId)));
+            sp.scale.set(s);
+            sp.position.set(cell.col * TILE, cell.row * TILE);
+            this.islandsContainer.addChild(sp);
+        }
+
         for (const d of map.decorations) {
             const sp = new PIXI.Sprite(this.t(url.tile(d.tileId)));
             sp.anchor.set(0.5);
@@ -256,6 +273,7 @@ export class GameRenderer {
         }
     }
 
+    // size 1 = navio destruído, menor = acerto
     public spawnExplosion(x: number, y: number, size = 1): void {
         const frames = EXPLOSION_FRAMES.map((p) => this.t(p));
         const sprite = new PIXI.Sprite(frames[0]);
@@ -300,6 +318,7 @@ export class GameRenderer {
         }
         this.lastPlayerHealth = p.health;
 
+        // timeRemaining subiu: partida reiniciada
         const restarted = state.timeRemaining > this.lastTimeRemaining;
         this.lastTimeRemaining = state.timeRemaining;
 

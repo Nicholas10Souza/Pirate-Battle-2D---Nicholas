@@ -153,6 +153,15 @@ export const GameCanvas: React.FC = () => {
         return `${mins}:${secs}`;
     };
 
+    const [fit, setFit] = useState(1);
+
+    useEffect(() => {
+        const update = () => setFit(Math.min(window.innerWidth / 960, window.innerHeight / 540));
+        update();
+        window.addEventListener('resize', update);
+        return () => window.removeEventListener('resize', update);
+    }, []);
+
     const triggerFrontFire = () => {
         if (simRef.current?.fireFront()) SoundManager.getInstance().play('cannon_fire_1', 0.8);
     };
@@ -182,6 +191,9 @@ export const GameCanvas: React.FC = () => {
                 border: '3px solid #334155',
                 userSelect: 'none',
                 touchAction: 'none',
+                flexShrink: 0,
+                transform: `scale(${fit})`,
+                transformOrigin: 'center',
             }}
         >
             {/* Canvas PixiJS */}
@@ -352,9 +364,9 @@ interface RoundButtonProps {
     icon: string;
     size: number;
     title: string;
-
+    // tiros, pausa
     onPress?: () => void;
-
+    // leme e velas
     hold?: (down: boolean) => void;
 }
 
