@@ -35,7 +35,7 @@ export const CaptainsLogModal: React.FC = () => {
         <div
             style={{
                 position: 'relative',
-                width: '740px',
+                width: '880px',
                 minHeight: '520px',
                 backgroundImage: `url('/assets/png/default/ui/menu/panel_menu.png')`,
                 backgroundSize: '100% 100%',
@@ -130,11 +130,11 @@ export const CaptainsLogModal: React.FC = () => {
                 }}
             >
                 {tab === 'RANKING'
-                    ? '120 SECOND BATTLES · 3 SECOND SPA INTERVAL'
+                    ? '120 SECOND BATTLES · 3 SECOND SPAWN INTERVAL'
                     : 'CAPTAIN JACK · YOUR RECENT BATTLES'}
             </div>
 
-            <div style={{ width: '100%', maxWidth: '560px', flex: 1, display: 'flex', flexDirection: 'column', marginTop: '12px' }}>
+            <div style={{ width: '100%', maxWidth: '740px', flex: 1, display: 'flex', flexDirection: 'column', marginTop: '12px' }}>
                 {tab === 'RANKING' ? (
                     <div>
                         <div style={{
@@ -260,7 +260,9 @@ export const CaptainsLogModal: React.FC = () => {
                         cursor: page <= 1 ? 'default' : 'pointer'
                     }}
                 >
-                    ◀
+                    <span style={{ fontSize: '15px', color: '#fef3c7', textShadow: '0 2px 4px rgba(0,0,0,0.9)', marginLeft: '-2px' }}>
+                        ◀
+                    </span>
                 </button>
                 <span style={{ color: '#cbd5e1', fontSize: '9px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
                     PAGE {page} OF {totalPages}
@@ -277,11 +279,15 @@ export const CaptainsLogModal: React.FC = () => {
                         cursor: page >= totalPages ? 'default' : 'pointer'
                     }}
                 >
-                    ▶
+                    <span style={{ fontSize: '15px', color: '#fef3c7', textShadow: '0 2px 4px rgba(0,0,0,0.9)', marginRight: '-2px' }}>
+                        ▶
+                    </span>
                 </button>
             </div>
 
-            <WoodButton label="MAIN MENU" onClick={() => setScreen('MENU')} width={280} height={62} />
+            <div style={{ paddingBottom: '10px' }}>
+                <WoodButton label="MAIN MENU" onClick={() => setScreen('MENU')} width={210} height={54} />
+            </div>
         </div>
     );
 };

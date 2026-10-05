@@ -24,7 +24,6 @@ export const GameCanvas: React.FC = () => {
     useEffect(() => {
         if (!containerRef.current) return;
 
-        // Resolução nativa 16:9 alinhada com os mockups
         const width = 960;
         const height = 540;
         const sim = new Simulation(width, height, config);
@@ -162,6 +161,14 @@ export const GameCanvas: React.FC = () => {
         if (simRef.current?.fireBroadside(side)) SoundManager.getInstance().play('cannon_broadside', 0.9);
     };
 
+    const healthRatio = Math.max(0, Math.min(1, hudStats.health / MAX_HEALTH));
+    const healthFill = healthRatio > 0.6 ? 'green' : healthRatio > 0.3 ? 'amber' : 'red';
+    const fillClipRight = 100 - ((30 + 196 * healthRatio) / 256) * 100;
+
+    const press = (key: 'left' | 'right' | 'forward') => (down: boolean) => {
+        keysRef.current[key] = down;
+    };
+
     return (
         <div
             style={{
@@ -174,15 +181,19 @@ export const GameCanvas: React.FC = () => {
                 overflow: 'hidden',
                 border: '3px solid #334155',
                 userSelect: 'none',
+                touchAction: 'none',
             }}
         >
-            {/* HUD Superior Oficial */}
+            {/* Canvas PixiJS */}
+            <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+
+            {/* HUD superior */}
             <div
                 style={{
                     position: 'absolute',
-                    top: 14,
-                    left: 18,
-                    right: 18,
+                    top: 12,
+                    left: 16,
+                    right: 16,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -190,125 +201,41 @@ export const GameCanvas: React.FC = () => {
                     pointerEvents: 'none',
                 }}
             >
-                {/* Barra de Vida Superior Esquerda */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        background: 'rgba(15, 23, 42, 0.85)',
-                        border: '2px solid #b45309',
-                        borderRadius: '24px',
-                        padding: '4px 14px 4px 8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.7)',
-                    }}
-                >
-                    <span style={{ fontSize: '1.2rem', marginRight: '6px' }}>❤️</span>
-                    <div
-                        style={{
-                            position: 'relative',
-                            width: '120px',
-                            height: '14px',
-                            background: '#0f172a',
-                            borderRadius: '8px',
-                            overflow: 'hidden',
-                            border: '1px solid #475569',
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: `${Math.max(0, hudStats.health)}%`,
-                                height: '100%',
-                                background:
-                                    hudStats.health > 35
-                                        ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                                        : 'linear-gradient(90deg, #ef4444, #dc2626)',
-                                transition: 'width 0.15s ease',
-                            }}
-                        />
-                    </div>
-                    <span
-                        style={{
-                            color: '#f8fafc',
-                            fontSize: '0.8rem',
-                            fontWeight: 800,
-                            marginLeft: '8px',
-                            textShadow: '0 1px 3px #000',
-                        }}
-                    >
-                        {hudStats.health} / 100
+                {/* Barra de vida */}
+                <div style={{ position: 'relative', width: 224, height: 42, marginLeft: 14 }}>
+                    <img src={`${UI}/hud/health_frame.png`} alt="" style={fillParent} />
+                    <img
+                        src={`${UI}/hud/health_fill_${healthFill}.png`}
+                        alt=""
+                        style={{ ...fillParent, clipPath: `inset(0 ${fillClipRight}% 0 0)`, transition: 'clip-path 0.15s ease' }}
+                    />
+                    <img
+                        src={`${UI}/hud/icon_heart.png`}
+                        alt="Vida"
+                        style={{ position: 'absolute', left: -16, top: -4, width: 44, height: 44 }}
+                    />
+                    <span style={{ ...hudText, ...fillParent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {hudStats.health} / {MAX_HEALTH}
                     </span>
                 </div>
 
-                {/* Pontuação, Tempo e Pausa */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            background: 'rgba(15, 23, 42, 0.85)',
-                            border: '2px solid #b45309',
-                            borderRadius: '20px',
-                            padding: '4px 14px',
-                            color: '#fef08a',
-                            fontWeight: 800,
-                            fontSize: '0.9rem',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.6)',
-                        }}
-                    >
-                        <span style={{ color: '#facc15' }}>★</span>
-                        <span>{hudStats.score}</span>
-                    </div>
-
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            background: 'rgba(15, 23, 42, 0.85)',
-                            border: '2px solid #b45309',
-                            borderRadius: '20px',
-                            padding: '4px 14px',
-                            color: '#f8fafc',
-                            fontWeight: 800,
-                            fontSize: '0.9rem',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.6)',
-                        }}
-                    >
-                        <span>🕒</span>
-                        <span>{formatTime(hudStats.time)}</span>
-                    </div>
-
-                    <button
-                        onClick={() => {
+                {/* Pontuação, tempo e pausa */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <CounterPanel icon="icon_score.png" value={String(hudStats.score)} />
+                    <CounterPanel icon="icon_time.png" value={formatTime(hudStats.time)} />
+                    <RoundButton
+                        icon="icon_pause.png"
+                        size={40}
+                        title="Pausar (P / Esc)"
+                        onPress={() => {
                             if (simRef.current) simRef.current.setPaused(true);
                             setScreen('PAUSED');
                         }}
-                        style={{
-                            pointerEvents: 'auto',
-                            width: '40px',
-                            height: '40px',
-                            border: 'none',
-                            background: "transparent url('/assets/png/default/ui/controls/button_round_normal.png') no-repeat center/contain",
-                            cursor: 'pointer',
-                            color: '#fef3c7',
-                            fontWeight: 900,
-                            fontSize: '1rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textShadow: '0 2px 4px #000',
-                        }}
-                    >
-                        ⏸
-                    </button>
+                    />
                 </div>
             </div>
 
-            {/* Canvas PixiJS */}
-            <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-
-            {/* Controles de Leme/Vela (Inferior Esquerdo) */}
+            {/* Controles de navegação (inferior esquerdo) */}
             <div
                 style={{
                     position: 'absolute',
@@ -316,45 +243,18 @@ export const GameCanvas: React.FC = () => {
                     left: 24,
                     display: 'flex',
                     alignItems: 'flex-end',
-                    gap: '10px',
+                    gap: 10,
                     zIndex: 20,
                 }}
             >
-                <button
-                    onMouseDown={() => (keysRef.current.left = true)}
-                    onMouseUp={() => (keysRef.current.left = false)}
-                    onTouchStart={() => (keysRef.current.left = true)}
-                    onTouchEnd={() => (keysRef.current.left = false)}
-                    style={roundButtonStyle}
-                    title="Leme Bombordo (A)"
-                >
-                    ↶
-                </button>
-
-                <button
-                    onMouseDown={() => (keysRef.current.forward = true)}
-                    onMouseUp={() => (keysRef.current.forward = false)}
-                    onTouchStart={() => (keysRef.current.forward = true)}
-                    onTouchEnd={() => (keysRef.current.forward = false)}
-                    style={{ ...roundButtonStyle, width: '56px', height: '56px', marginBottom: '16px' }}
-                    title="Velas (W)"
-                >
-                    ↑
-                </button>
-
-                <button
-                    onMouseDown={() => (keysRef.current.right = true)}
-                    onMouseUp={() => (keysRef.current.right = false)}
-                    onTouchStart={() => (keysRef.current.right = true)}
-                    onTouchEnd={() => (keysRef.current.right = false)}
-                    style={roundButtonStyle}
-                    title="Leme Estibordo (D)"
-                >
-                    ↷
-                </button>
+                <RoundButton icon="icon_turn_left.png" size={48} title="Leme bombordo (A)" hold={press('left')} />
+                <div style={{ marginBottom: 16 }}>
+                    <RoundButton icon="icon_forward.png" size={56} title="Velas (W)" hold={press('forward')} />
+                </div>
+                <RoundButton icon="icon_turn_right.png" size={48} title="Leme estibordo (D)" hold={press('right')} />
             </div>
 
-            {/* Controles de Artilharia (Inferior Direito) */}
+            {/* Controles de artilharia (inferior direito) */}
             <div
                 style={{
                     position: 'absolute',
@@ -363,59 +263,35 @@ export const GameCanvas: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: 8,
                     zIndex: 20,
                 }}
             >
-                <button
-                    onClick={triggerFrontFire}
-                    style={{ ...roundButtonStyle, width: '54px', height: '54px' }}
-                    title="Disparo Frontal (Espaço / J)"
-                >
-                    🎯
-                </button>
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <button
-                        onClick={() => triggerBroadside('left')}
-                        style={roundButtonStyle}
-                        title="Bordoada Esquerda (Q / U)"
-                    >
-                        ◀◀
-                    </button>
-                    <button
-                        onClick={() => triggerBroadside('right')}
-                        style={roundButtonStyle}
-                        title="Bordoada Direita (E / I)"
-                    >
-                        ▶▶
-                    </button>
+                <RoundButton icon="icon_fire_front.png" size={54} title="Disparo frontal (Espaço / J)" onPress={triggerFrontFire} />
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <RoundButton icon="icon_fire_left.png" size={48} title="Bordada esquerda (Q / U)" onPress={() => triggerBroadside('left')} />
+                    <RoundButton icon="icon_fire_right.png" size={48} title="Bordada direita (E / I)" onPress={() => triggerBroadside('right')} />
                 </div>
             </div>
 
-            {/* Watermark */}
-            <div
+            {/* Marca d'água */}
+            <img
+                src="/logo_jungle_gaming.svg"
+                alt="Jungle Gaming"
                 style={{
                     position: 'absolute',
-                    bottom: 12,
-                    right: 175,
+                    bottom: 14,
+                    right: 180,
+                    height: 22,
+                    width: 'auto',
+                    opacity: 0.85,
                     pointerEvents: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    opacity: 0.75,
-                    color: '#ffffff',
-                    fontWeight: 900,
-                    fontSize: '0.75rem',
-                    letterSpacing: '1px',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.9)',
                     zIndex: 10,
+                    filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.8))',
                 }}
-            >
-                <span>🐵</span> JUNGLE GAMING
-            </div>
+            />
 
-            {/* Modais Sobrepostos */}
+            {/* Modais sobrepostos */}
             {screen === 'PAUSED' && (
                 <div style={overlayStyle}>
                     <PauseModal onResume={resumeGame} />
@@ -431,20 +307,111 @@ export const GameCanvas: React.FC = () => {
     );
 };
 
-const roundButtonStyle: React.CSSProperties = {
-    width: '48px',
-    height: '48px',
-    border: 'none',
-    background: "transparent url('/assets/png/default/ui/controls/button_round_normal.png') no-repeat center/contain",
-    color: '#fef3c7',
-    fontSize: '1.25rem',
-    fontWeight: 900,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textShadow: '0 2px 4px rgba(0,0,0,0.9)',
-    outline: 'none',
+const UI = '/assets/png/default/ui';
+const MAX_HEALTH = 100;
+
+const fillParent: React.CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    display: 'block',
+};
+
+const hudText: React.CSSProperties = {
+    color: '#fff7e6',
+    fontSize: '0.8rem',
+    fontWeight: 800,
+    textShadow: '0 1px 3px #000',
+};
+
+const CounterPanel: React.FC<{ icon: string; value: string }> = ({ icon, value }) => (
+    <div style={{ position: 'relative', width: 112, height: 39 }}>
+        <img src={`${UI}/hud/counter_panel.png`} alt="" style={fillParent} />
+        <img src={`${UI}/hud/${icon}`} alt="" style={{ position: 'absolute', left: 10, top: 5, width: 28, height: 28 }} />
+        <span
+            style={{
+                ...hudText,
+                position: 'absolute',
+                left: 42,
+                right: 12,
+                top: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.95rem',
+            }}
+        >
+            {value}
+        </span>
+    </div>
+);
+
+interface RoundButtonProps {
+    icon: string;
+    size: number;
+    title: string;
+
+    onPress?: () => void;
+
+    hold?: (down: boolean) => void;
+}
+
+const RoundButton: React.FC<RoundButtonProps> = ({ icon, size, title, onPress, hold }) => {
+    const [state, setState] = useState<'normal' | 'hover' | 'pressed'>('normal');
+
+    return (
+        <button
+            type="button"
+            title={title}
+            aria-label={title}
+            onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture(e.pointerId);
+                setState('pressed');
+                hold?.(true);
+                onPress?.();
+            }}
+            onPointerUp={() => {
+                setState('hover');
+                hold?.(false);
+            }}
+            onPointerCancel={() => {
+                setState('normal');
+                hold?.(false);
+            }}
+            onPointerEnter={() => setState((s) => (s === 'pressed' ? s : 'hover'))}
+            onPointerLeave={() => {
+                setState('normal');
+                hold?.(false);
+            }}
+            style={{
+                width: size,
+                height: size,
+                padding: 0,
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+                background: `transparent url('${UI}/controls/button_round_${state}.png') no-repeat center / contain`,
+                touchAction: 'none',
+                pointerEvents: 'auto',
+            }}
+        >
+            <img
+                src={`${UI}/controls/${icon}`}
+                alt=""
+                draggable={false}
+                style={{
+                    position: 'absolute',
+                    inset: '18%',
+                    width: '64%',
+                    height: '64%',
+                    pointerEvents: 'none',
+                    transform: state === 'pressed' ? 'translateY(1px)' : undefined,
+                }}
+            />
+        </button>
+    );
 };
 
 const overlayStyle: React.CSSProperties = {
