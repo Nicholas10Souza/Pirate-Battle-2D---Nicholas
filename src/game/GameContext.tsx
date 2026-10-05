@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { GameConfig } from './Types';
+import { GameConfig } from './types';
 
 export type GameScreen = 'MENU' | 'PLAYING' | 'PAUSED' | 'OPTIONS' | 'LOG' | 'GAME_OVER';
 
@@ -13,8 +13,8 @@ interface GameContextType {
 }
 
 const defaultConfig: GameConfig = {
-    sessionTime: 120, // 120 segundos padrão
-    spawnInterval: 3.0, // 3 segundos padrão
+    sessionTime: 120,
+    spawnInterval: 3.0,
     playerMaxSpeed: 230,
     playerTurnSpeed: 3.4,
     playerHealth: 100,
@@ -29,7 +29,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [lastMatchResult, setLastMatchResult] = useState<{ score: number; reason: 'time_up' | 'defeated' | null; timeElapsed: number } | null>(null);
 
     const updateConfig = (partial: Partial<GameConfig>) => {
-        setConfig((prev) => ({ ...prev, ...partial }));
+        setConfig((prev: GameConfig) => ({ ...prev, ...partial }));
     };
 
     return (
