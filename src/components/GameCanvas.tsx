@@ -235,7 +235,7 @@ export const GameCanvas: React.FC = () => {
                 </div>
             </div>
 
-            {/* Controles de navegação (inferior esquerdo) */}
+            {/* Controles de navegação */}
             <div
                 style={{
                     position: 'absolute',
@@ -254,7 +254,7 @@ export const GameCanvas: React.FC = () => {
                 <RoundButton icon="icon_turn_right.png" size={48} title="Leme estibordo (D)" hold={press('right')} />
             </div>
 
-            {/* Controles de artilharia (inferior direito) */}
+            {/* Controles de artilharia */}
             <div
                 style={{
                     position: 'absolute',
@@ -291,7 +291,7 @@ export const GameCanvas: React.FC = () => {
                 }}
             />
 
-            {/* Modais sobrepostos */}
+            {/* Modais */}
             {screen === 'PAUSED' && (
                 <div style={overlayStyle}>
                     <PauseModal onResume={resumeGame} />

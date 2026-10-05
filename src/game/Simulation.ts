@@ -1,4 +1,4 @@
-import { GameConfig, GameState, ProjectileEntity, EnemyEntity } from './types';
+import { GameConfig, GameState, ProjectileEntity, EnemyEntity } from './Types';
 
 export class Simulation {
     public state: GameState;

@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Simulation } from './Simulation';
-import { buildIslandMap } from './types';
+import { buildIslandMap } from './TileMap';
 
 const BASE = '/assets/png/default';
 const TILE = 48;
@@ -8,7 +8,6 @@ const TILE_SRC = 64;
 
 const SHIP_SKIN = { player: 3, chaser: 2, shooter: 5 } as const;
 const SHIP_SCALE = { player: 0.8, chaser: 0.72, shooter: 0.8 } as const;
-
 const BAR = { w: 160, h: 40, fillX: 24, fillW: 112, scale: 0.42, offsetY: 58 };
 
 const EXPLOSION_FRAMES = [1, 2, 3].map((n) => `${BASE}/effects/explosion_${n}.png`);
@@ -164,7 +163,7 @@ export class GameRenderer {
         if (this.isDestroyed) {
             try {
                 this.app.destroy(true, { children: true });
-            } catch { /* já destruído */ }
+            } catch { }
             return;
         }
 
@@ -209,12 +208,15 @@ export class GameRenderer {
     }
 
     private buildScene(width: number, height: number): void {
+        // água
         this.water = new PIXI.TilingSprite({ texture: this.t(url.tile(73)), width, height });
         this.water.tileScale.set(TILE / TILE_SRC);
         this.bgContainer.addChild(this.water);
 
+        // ilhas
         this.buildIslands(width, height);
 
+        // jogador
         this.playerView = this.makeShipView('player', url.barGreen);
         this.shipContainer.addChild(this.playerView.body);
         this.hudWorldContainer.addChild(this.playerView.bar.view);
@@ -321,7 +323,7 @@ export class GameRenderer {
         }
         for (const [id, view] of this.enemyViews) {
             if (seen.has(id)) continue;
-            if (!silent) this.spawnExplosion(view.lastX, view.lastY, 1); // inimigo destruído
+            if (!silent) this.spawnExplosion(view.lastX, view.lastY, 1);
             view.destroy();
             this.enemyViews.delete(id);
         }
@@ -358,6 +360,7 @@ export class GameRenderer {
         }
         for (const [id, view] of this.projectileViews) {
             if (seen.has(id)) continue;
+
             if (!silent && view.life > 0.06) this.spawnExplosion(view.x, view.y, 0.4);
             view.ball.destroy();
             view.trail.destroy();
@@ -370,7 +373,7 @@ export class GameRenderer {
         if (this.isInitialized) {
             try {
                 this.app.destroy(true, { children: true });
-            } catch { /* já destruído */ }
+            } catch { }
         }
     }
 }

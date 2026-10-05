@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { GameConfig } from './types';
+import { GameConfig } from './Types';
 
 export type GameScreen = 'MENU' | 'PLAYING' | 'PAUSED' | 'OPTIONS' | 'LOG' | 'GAME_OVER';
 
