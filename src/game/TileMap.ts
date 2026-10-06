@@ -1,27 +1,30 @@
 export const TILE = 68;
 const ORIGIN = { x: -33, y: -5 };
 
-const MASK = [
-    '########.......',
-    '..######.......',
-    '..####.........',
-    '..####.........',
-    '...............',
-    '...........####',
-    '.....#####.####',
-    '.....##########',
-];
-const COLS = MASK[0].length;
-const ROWS = MASK.length;
+const LAYOUT = [
+    ' 56 56h  37  39 39h  39  40  41   0   0   0   0   0   0   0',
+    '  0   0 38v 39v 39hv  36  56  57   0   0   0   0   0   0   0',
+    '  0   0  38  39  40  41   0   0   0   0   0   0   0   0   0',
+    '  0   0  54  55 55h  57   0   0   0   0   0   0   0   0   0',
+    '  0   0   0   0   0   0   0   0   0   0   0   0   0   0   0',
+    '  0   0   0   0   0   0   0   0   0   0   0   6   8  8h   8',
+    '  0   0   0   0   0   6   8  8h   8   9   0  38  39  40 40h',
+    '  0   0   0   0   0  38 39h  39 39h  52  8h  53 39v 40v 40hv',
+].map((row) => row.trim().split(/\s+/));
+
+const ROWS = LAYOUT.length;
+const COLS = LAYOUT[0].length;
 
 export interface LandCell {
     col: number;
     row: number;
     tileId: number;
+    flipX: boolean;
+    flipY: boolean;
 }
 
 export interface Decoration {
-    tileId: number;
+    image: string;
     x: number;
     y: number;
     rotation: number;
@@ -34,88 +37,59 @@ export interface IslandMap {
     decorations: Decoration[];
 }
 
+const piece = (col: number, row: number, tileId: number): LandCell => ({ col, row, tileId, flipX: false, flipY: false });
+
+// torres 93 94 78, muros 15 16, canhão 31, ponte 76
 const FORTRESS: LandCell[] = [
-    { col: 1, row: 0, tileId: 93 },
-    { col: 2, row: 0, tileId: 16 },
-    { col: 3, row: 0, tileId: 78 },
-    { col: 3, row: 1, tileId: 93 },
-    { col: 4, row: 1, tileId: 76 },
-    { col: 5, row: 1, tileId: 94 },
-    { col: 5, row: 0, tileId: 31 },
+    piece(1, 0, 93),
+    piece(2, 0, 16),
+    piece(3, 0, 78),
+    piece(3, 1, 93),
+    piece(4, 1, 76),
+    piece(5, 1, 94),
+    piece(5, 0, 31),
 ];
 
 const DECORATIONS: Decoration[] = [
-    { tileId: 50, x: -3, y: 30, rotation: 0, scale: 0.75 },
-    { tileId: 71, x: 139, y: 165, rotation: 0, scale: 0.96 },
-    { tileId: 72, x: 205, y: 232, rotation: 0.4, scale: 0.97 },
-    { tileId: 66, x: 337, y: 165, rotation: 0, scale: 1 },
-    { tileId: 70, x: 408, y: 27, rotation: 0, scale: 0.92 },
-    { tileId: 67, x: 673, y: 500, rotation: 0, scale: 1 },
-    { tileId: 71, x: 805, y: 493, rotation: 0.3, scale: 1 },
-    { tileId: 72, x: 816, y: 422, rotation: 0, scale: 0.7 },
-    { tileId: 72, x: 788, y: 433, rotation: 1, scale: 0.6 },
+    { image: 'tile_50', x: -3, y: 30, rotation: 0, scale: 0.75 },
+    { image: 'tile_71', x: 139, y: 165, rotation: 0, scale: 0.96 },
+    { image: 'tile_72', x: 205, y: 232, rotation: 0.4, scale: 0.97 },
+    { image: 'tile_66', x: 337, y: 165, rotation: 0, scale: 1 },
+    { image: 'tile_70', x: 408, y: 27, rotation: 0, scale: 0.92 },
+    { image: 'tile_67', x: 673, y: 500, rotation: 0, scale: 1 },
+    { image: 'tile_71', x: 805, y: 493, rotation: 0.3, scale: 1 },
+    { image: 'tile_72', x: 816, y: 422, rotation: 0, scale: 0.7 },
+    { image: 'tile_72', x: 788, y: 433, rotation: 1, scale: 0.6 },
+    { image: 'dinghy_large_2', x: 544, y: 430, rotation: 0.5, scale: 1.1 },
+    { image: 'dinghy_small_1', x: 723, y: 355, rotation: -0.9, scale: 1.1 },
+    { image: 'cannon_mobile', x: 797, y: 357, rotation: -0.6, scale: 1.1 },
+    { image: 'cannon_loose', x: 933, y: 421, rotation: 1.4, scale: 1.1 },
+    { image: 'wood_4', x: 949, y: 437, rotation: -0.6, scale: 1.2 },
 ];
 
 export function cellOrigin(col: number, row: number): { x: number; y: number } {
     return { x: col * TILE + ORIGIN.x, y: row * TILE + ORIGIN.y };
 }
 
+// fora da grade repete a borda, a ilha continua além da tela
 const isLand = (c: number, r: number): boolean => {
-    const row = MASK[Math.min(ROWS - 1, Math.max(0, r))];
-    return row[Math.min(COLS - 1, Math.max(0, c))] === '#';
+    const row = LAYOUT[Math.min(ROWS - 1, Math.max(0, r))];
+    return row[Math.min(COLS - 1, Math.max(0, c))] !== '0';
 };
 
-const isGrass = (c: number, r: number): boolean => {
-    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if (!isLand(c + dc, r + dr)) return false;
-    return true;
-};
-
-function mulberry32(seed: number): () => number {
-    let a = seed >>> 0;
-    return () => {
-        a = (a + 0x6d2b79f5) >>> 0;
-        let t = a;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
-
-export function buildIslandMap(seed = 7): IslandMap {
-    const rnd = mulberry32(seed);
-    const pick = <T,>(list: T[]): T => list[Math.floor(rnd() * list.length)];
-
-    const tileFor = (c: number, r: number): number => {
-        if (isGrass(c, r)) return pick([39, 40]);
-        const n = !isLand(c, r - 1);
-        const e = !isLand(c + 1, r);
-        const s = !isLand(c, r + 1);
-        const w = !isLand(c - 1, r);
-        if (n && w) return isGrass(c + 1, r + 1) ? 6 : 1;
-        if (n && e) return isGrass(c - 1, r + 1) ? 9 : 3;
-        if (s && w) return isGrass(c + 1, r - 1) ? 54 : 33;
-        if (s && e) return isGrass(c - 1, r - 1) ? 57 : 35;
-        if (n) return isGrass(c, r + 1) ? pick([7, 8]) : 2;
-        if (s) return isGrass(c, r - 1) ? pick([55, 56]) : 34;
-        if (w) return isGrass(c + 1, r) ? pick([22, 38]) : 17;
-        if (e) return isGrass(c - 1, r) ? pick([25, 41]) : 19;
-        // 4 vizinhos de terra e uma diagonal de água
-        if (!isLand(c + 1, r + 1)) return 36;
-        if (!isLand(c - 1, r + 1)) return 37;
-        if (!isLand(c + 1, r - 1)) return 52;
-        if (!isLand(c - 1, r - 1)) return 53;
-        return pick([68, 69]);
-    };
-
+export function buildIslandMap(): IslandMap {
     const cells: LandCell[] = [];
-    for (let r = 0; r <= ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            if (isLand(c, r)) cells.push({ col: c, row: r, tileId: tileFor(c, r) });
+    for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+            const m = /^(\d+)(h?)(v?)$/.exec(LAYOUT[row][col]);
+            if (!m || m[1] === '0') continue;
+            cells.push({ col, row, tileId: Number(m[1]), flipX: m[2] === 'h', flipY: m[3] === 'v' });
         }
     }
     return { cells, structures: FORTRESS, decorations: DECORATIONS };
 }
 
+// retângulos de terra para desenhar as águas rasas
 export function landRects(): { x: number; y: number; w: number; h: number }[] {
     const list: { x: number; y: number; w: number; h: number }[] = [];
     for (let r = -2; r <= ROWS + 1; r++) {
@@ -128,11 +102,12 @@ export function landRects(): { x: number; y: number; w: number; h: number }[] {
     return list;
 }
 
+// um círculo por célula de terra, para a colisão ficar igual ao desenho
 export function buildIslandColliders() {
     const list: { id: string; position: { x: number; y: number }; radius: number }[] = [];
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-            if (MASK[r][c] !== '#') continue;
+            if (LAYOUT[r][c] === '0') continue;
             const o = cellOrigin(c, r);
             list.push({ id: `land-${c}-${r}`, position: { x: o.x + TILE / 2, y: o.y + TILE / 2 }, radius: 38 });
         }
