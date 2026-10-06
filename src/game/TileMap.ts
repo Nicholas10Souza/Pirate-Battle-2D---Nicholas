@@ -1,7 +1,18 @@
-export interface IslandCircle {
-    position: { x: number; y: number };
-    radius: number;
-}
+export const TILE = 68;
+const ORIGIN = { x: -33, y: -5 };
+
+const MASK = [
+    '########.......',
+    '..######.......',
+    '..####.........',
+    '..####.........',
+    '...............',
+    '...........####',
+    '.....#####.####',
+    '.....##########',
+];
+const COLS = MASK[0].length;
+const ROWS = MASK.length;
 
 export interface LandCell {
     col: number;
@@ -10,7 +21,6 @@ export interface LandCell {
 }
 
 export interface Decoration {
-    kind: 'palm' | 'rock';
     tileId: number;
     x: number;
     y: number;
@@ -25,17 +35,40 @@ export interface IslandMap {
 }
 
 const FORTRESS: LandCell[] = [
-    { col: 4, row: 0, tileId: 15 },
-    { col: 4, row: 1, tileId: 15 },
-    { col: 4, row: 2, tileId: 93 },
-    { col: 5, row: 2, tileId: 76 },
-    { col: 6, row: 2, tileId: 16 },
-    { col: 7, row: 0, tileId: 31 },
-    { col: 7, row: 1, tileId: 15 },
-    { col: 7, row: 2, tileId: 94 },
+    { col: 1, row: 0, tileId: 93 },
+    { col: 2, row: 0, tileId: 16 },
+    { col: 3, row: 0, tileId: 78 },
+    { col: 3, row: 1, tileId: 93 },
+    { col: 4, row: 1, tileId: 76 },
+    { col: 5, row: 1, tileId: 94 },
+    { col: 5, row: 0, tileId: 31 },
 ];
 
-const MARGIN = 3;
+const DECORATIONS: Decoration[] = [
+    { tileId: 50, x: -3, y: 30, rotation: 0, scale: 0.75 },
+    { tileId: 71, x: 139, y: 165, rotation: 0, scale: 0.96 },
+    { tileId: 72, x: 205, y: 232, rotation: 0.4, scale: 0.97 },
+    { tileId: 66, x: 337, y: 165, rotation: 0, scale: 1 },
+    { tileId: 70, x: 408, y: 27, rotation: 0, scale: 0.92 },
+    { tileId: 67, x: 673, y: 500, rotation: 0, scale: 1 },
+    { tileId: 71, x: 805, y: 493, rotation: 0.3, scale: 1 },
+    { tileId: 72, x: 816, y: 422, rotation: 0, scale: 0.7 },
+    { tileId: 72, x: 788, y: 433, rotation: 1, scale: 0.6 },
+];
+
+export function cellOrigin(col: number, row: number): { x: number; y: number } {
+    return { x: col * TILE + ORIGIN.x, y: row * TILE + ORIGIN.y };
+}
+
+const isLand = (c: number, r: number): boolean => {
+    const row = MASK[Math.min(ROWS - 1, Math.max(0, r))];
+    return row[Math.min(COLS - 1, Math.max(0, c))] === '#';
+};
+
+const isGrass = (c: number, r: number): boolean => {
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if (!isLand(c + dc, r + dr)) return false;
+    return true;
+};
 
 function mulberry32(seed: number): () => number {
     let a = seed >>> 0;
@@ -48,52 +81,12 @@ function mulberry32(seed: number): () => number {
     };
 }
 
-export function buildIslandMap(
-    islands: IslandCircle[],
-    width: number,
-    height: number,
-    tile: number,
-    seed = 7
-): IslandMap {
-    const cols = Math.ceil(width / tile);
-    const rows = Math.ceil(height / tile);
+export function buildIslandMap(seed = 7): IslandMap {
     const rnd = mulberry32(seed);
     const pick = <T,>(list: T[]): T => list[Math.floor(rnd() * list.length)];
 
-    const insideCircle = (c: number, r: number): boolean => {
-        const cx = (c + 0.5) * tile;
-        const cy = (r + 0.5) * tile;
-        return islands.some((i) => Math.hypot(cx - i.position.x, cy - i.position.y) < i.radius);
-    };
-
-    const land = new Map<string, boolean>();
-    const key = (c: number, r: number) => `${c},${r}`;
-    for (let r = -MARGIN; r < rows + MARGIN; r++) {
-        for (let c = -MARGIN; c < cols + MARGIN; c++) land.set(key(c, r), insideCircle(c, r));
-    }
-    const isLand = (c: number, r: number): boolean => land.get(key(c, r)) ?? insideCircle(c, r);
-
-    let changed = true;
-    while (changed) {
-        changed = false;
-        for (const [k, v] of land) {
-            if (!v) continue;
-            const [c, r] = k.split(',').map(Number);
-            const water = [[0, -1], [1, 0], [0, 1], [-1, 0]].filter(([dc, dr]) => !isLand(c + dc, r + dr)).length;
-            if (water >= 3) {
-                land.set(k, false);
-                changed = true;
-            }
-        }
-    }
-
-    const isGrass = (c: number, r: number): boolean => {
-        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if (!isLand(c + dc, r + dr)) return false;
-        return true;
-    };
-
     const tileFor = (c: number, r: number): number => {
-        if (isGrass(c, r)) return pick([23, 24, 39, 40]);
+        if (isGrass(c, r)) return pick([39, 40]);
         const n = !isLand(c, r - 1);
         const e = !isLand(c + 1, r);
         const s = !isLand(c, r + 1);
@@ -106,47 +99,43 @@ export function buildIslandMap(
         if (s) return isGrass(c, r - 1) ? pick([55, 56]) : 34;
         if (w) return isGrass(c + 1, r) ? pick([22, 38]) : 17;
         if (e) return isGrass(c - 1, r) ? pick([25, 41]) : 19;
+        // 4 vizinhos de terra e uma diagonal de água
         if (!isLand(c + 1, r + 1)) return 36;
         if (!isLand(c - 1, r + 1)) return 37;
         if (!isLand(c + 1, r - 1)) return 52;
         if (!isLand(c - 1, r - 1)) return 53;
-        return pick([4, 5, 18, 20, 21, 68, 69]);
+        return pick([68, 69]);
     };
 
     const cells: LandCell[] = [];
-    const decorations: Decoration[] = [];
-    const structures = FORTRESS.filter((f) => isLand(f.col, f.row));
-    const taken = new Set(structures.map((f) => key(f.col, f.row)));
-    for (let r = -MARGIN; r < rows + MARGIN; r++) {
-        for (let c = -MARGIN; c < cols + MARGIN; c++) {
-            if (!isLand(c, r)) continue;
-            const tileId = tileFor(c, r);
-
-            if (c >= -1 && c <= cols && r >= -1 && r <= rows) cells.push({ col: c, row: r, tileId });
-
-            if (isGrass(c, r) && !taken.has(key(c, r)) && c >= 0 && c < cols && r >= 0 && r < rows) {
-                const roll = rnd();
-                if (roll < 0.2) {
-                    decorations.push({
-                        kind: 'palm',
-                        tileId: pick([70, 71, 72]),
-                        x: (c + 0.2 + rnd() * 0.6) * tile,
-                        y: (r + 0.2 + rnd() * 0.6) * tile,
-                        rotation: rnd() * Math.PI * 2,
-                        scale: 0.55 + rnd() * 0.35,
-                    });
-                } else if (roll < 0.27) {
-                    decorations.push({
-                        kind: 'rock',
-                        tileId: pick([65, 66, 67]),
-                        x: (c + 0.3 + rnd() * 0.4) * tile,
-                        y: (r + 0.3 + rnd() * 0.4) * tile,
-                        rotation: 0,
-                        scale: 0.5 + rnd() * 0.25,
-                    });
-                }
-            }
+    for (let r = 0; r <= ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (isLand(c, r)) cells.push({ col: c, row: r, tileId: tileFor(c, r) });
         }
     }
-    return { cells, structures, decorations };
+    return { cells, structures: FORTRESS, decorations: DECORATIONS };
+}
+
+export function landRects(): { x: number; y: number; w: number; h: number }[] {
+    const list: { x: number; y: number; w: number; h: number }[] = [];
+    for (let r = -2; r <= ROWS + 1; r++) {
+        for (let c = -2; c <= COLS + 1; c++) {
+            if (!isLand(c, r)) continue;
+            const o = cellOrigin(c, r);
+            list.push({ x: o.x, y: o.y, w: TILE, h: TILE });
+        }
+    }
+    return list;
+}
+
+export function buildIslandColliders() {
+    const list: { id: string; position: { x: number; y: number }; radius: number }[] = [];
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (MASK[r][c] !== '#') continue;
+            const o = cellOrigin(c, r);
+            list.push({ id: `land-${c}-${r}`, position: { x: o.x + TILE / 2, y: o.y + TILE / 2 }, radius: 38 });
+        }
+    }
+    return list;
 }

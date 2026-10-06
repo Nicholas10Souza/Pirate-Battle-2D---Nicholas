@@ -199,107 +199,69 @@ export const GameCanvas: React.FC = () => {
             {/* Canvas PixiJS */}
             <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
-            {/* HUD superior */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 16,
-                    right: 16,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    zIndex: 20,
-                    pointerEvents: 'none',
-                }}
-            >
-                {/* Barra de vida */}
-                <div style={{ position: 'relative', width: 224, height: 42, marginLeft: 14 }}>
-                    <img src={`${UI}/hud/health_frame.png`} alt="" style={fillParent} />
-                    <img
-                        src={`${UI}/hud/health_fill_${healthFill}.png`}
-                        alt=""
-                        style={{ ...fillParent, clipPath: `inset(0 ${fillClipRight}% 0 0)`, transition: 'clip-path 0.15s ease' }}
-                    />
-                    <img
-                        src={`${UI}/hud/icon_heart.png`}
-                        alt="Vida"
-                        style={{ position: 'absolute', left: -16, top: -4, width: 44, height: 44 }}
-                    />
-                    <span style={{ ...hudText, ...fillParent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {hudStats.health} / {MAX_HEALTH}
-                    </span>
-                </div>
+            {/* Vida */}
+            <img src={`${UI}/hud/icon_heart.png`} alt="Vida" style={{ ...abs(15, 18), width: 29.5, height: 29.5, zIndex: 20 }} />
+            <div style={{ ...abs(49, 16.5), width: 172, height: 32.3, zIndex: 20, pointerEvents: 'none' }}>
+                <img src={`${UI}/hud/health_frame.png`} alt="" style={fillParent} />
+                <img
+                    src={`${UI}/hud/health_fill_${healthFill}.png`}
+                    alt=""
+                    style={{ ...fillParent, clipPath: `inset(0 ${fillClipRight}% 0 0)`, transition: 'clip-path 0.15s ease' }}
+                />
+                <span style={{ ...hudText, position: 'absolute', left: 20, width: 132, top: 0, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {hudStats.health} / {MAX_HEALTH}
+                </span>
+            </div>
 
-                {/* Pontuação, tempo e pausa */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <CounterPanel icon="icon_score.png" value={String(hudStats.score)} />
-                    <CounterPanel icon="icon_time.png" value={formatTime(hudStats.time)} />
-                    <RoundButton
-                        icon="icon_pause.png"
-                        size={40}
-                        title="Pausar (P / Esc)"
-                        onPress={() => {
-                            if (simRef.current) simRef.current.setPaused(true);
-                            setScreen('PAUSED');
-                        }}
-                    />
-                </div>
+            {/* Pontuação, tempo e pausa */}
+            <CounterPanel left={705.4} icon="icon_score.png" value={String(hudStats.score)} />
+            <CounterPanel left={807.3} icon="icon_time.png" value={formatTime(hudStats.time)} />
+            <div style={{ ...abs(908.7, 15), zIndex: 20 }}>
+                <RoundButton
+                    icon="icon_pause.png"
+                    size={36}
+                    title="Pausar (P / Esc)"
+                    onPress={() => {
+                        if (simRef.current) simRef.current.setPaused(true);
+                        setScreen('PAUSED');
+                    }}
+                />
             </div>
 
             {/* Controles de navegação */}
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: 24,
-                    left: 24,
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    gap: 10,
-                    zIndex: 20,
-                }}
-            >
-                <RoundButton icon="icon_turn_left.png" size={48} title="Leme bombordo (A)" hold={press('left')} />
-                <div style={{ marginBottom: 16 }}>
-                    <RoundButton icon="icon_forward.png" size={56} title="Velas (W)" hold={press('forward')} />
-                </div>
-                <RoundButton icon="icon_turn_right.png" size={48} title="Leme estibordo (D)" hold={press('right')} />
+            <div style={{ ...absB(15.5, 28), zIndex: 20 }}>
+                <RoundButton icon="icon_turn_left.png" size={40} title="Leme bombordo (A)" hold={press('left')} />
+            </div>
+            <div style={{ ...absB(60, 52), zIndex: 20 }}>
+                <RoundButton icon="icon_forward.png" size={40} title="Velas (W)" hold={press('forward')} />
+            </div>
+            <div style={{ ...absB(104.8, 28), zIndex: 20 }}>
+                <RoundButton icon="icon_turn_right.png" size={40} title="Leme estibordo (D)" hold={press('right')} />
             </div>
 
             {/* Controles de artilharia */}
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: 24,
-                    right: 24,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 8,
-                    zIndex: 20,
-                }}
-            >
-                <RoundButton icon="icon_fire_front.png" size={54} title="Disparo frontal (Espaço / J)" onPress={triggerFrontFire} />
-                <div style={{ display: 'flex', gap: 12 }}>
-                    <RoundButton icon="icon_fire_left.png" size={48} title="Bordada esquerda (Q / U)" onPress={() => triggerBroadside('left')} />
-                    <RoundButton icon="icon_fire_right.png" size={48} title="Bordada direita (E / I)" onPress={() => triggerBroadside('right')} />
-                </div>
+            <div style={{ ...absB(860, 52), zIndex: 20 }}>
+                <RoundButton icon="icon_fire_front.png" size={40} title="Disparo frontal (Espaço / J)" onPress={triggerFrontFire} />
+            </div>
+            <div style={{ ...absB(815.5, 28), zIndex: 20 }}>
+                <RoundButton icon="icon_fire_left.png" size={40} title="Bordada esquerda (Q / U)" onPress={() => triggerBroadside('left')} />
+            </div>
+            <div style={{ ...absB(904.8, 28), zIndex: 20 }}>
+                <RoundButton icon="icon_fire_right.png" size={40} title="Bordada direita (E / I)" onPress={() => triggerBroadside('right')} />
             </div>
 
-            {/* Marca d'água */}
-            <img
-                src="/logo_jungle_gaming.svg"
-                alt="Jungle Gaming"
+            {/* Marca d'água: o svg tem margem transparente, então recorto só o desenho */}
+            <div
                 style={{
-                    position: 'absolute',
-                    bottom: 14,
-                    right: 180,
-                    height: 22,
-                    width: 'auto',
-                    opacity: 0.85,
+                    ...absB(847.5, 119),
+                    width: 65.6,
+                    height: 20.8,
+                    backgroundImage: "url('/logo_jungle_gaming.svg')",
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '76.16px 38.08px',
+                    backgroundPosition: '-5.58px -8.37px',
                     pointerEvents: 'none',
                     zIndex: 10,
-                    filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.8))',
                 }}
             />
 
@@ -322,6 +284,9 @@ export const GameCanvas: React.FC = () => {
 const UI = '/assets/png/default/ui';
 const MAX_HEALTH = 100;
 
+const abs = (left: number, top: number): React.CSSProperties => ({ position: 'absolute', left, top });
+const absB = (left: number, bottom: number): React.CSSProperties => ({ position: 'absolute', left, bottom });
+
 const fillParent: React.CSSProperties = {
     position: 'absolute',
     inset: 0,
@@ -332,31 +297,30 @@ const fillParent: React.CSSProperties = {
 
 const hudText: React.CSSProperties = {
     color: '#fff7e6',
-    fontSize: '0.8rem',
+    fontSize: '10.5px',
     fontWeight: 800,
-    textShadow: '0 1px 3px #000',
+    textShadow: '0 1px 2px #000',
 };
 
-const CounterPanel: React.FC<{ icon: string; value: string }> = ({ icon, value }) => (
-    <div style={{ position: 'relative', width: 112, height: 39 }}>
+const CounterPanel: React.FC<{ left: number; icon: string; value: string }> = ({ left, icon, value }) => (
+    <div style={{ ...abs(left, 16.2), width: 93.3, height: 32.6, zIndex: 20, pointerEvents: 'none' }}>
         <img src={`${UI}/hud/counter_panel.png`} alt="" style={fillParent} />
-        <img src={`${UI}/hud/${icon}`} alt="" style={{ position: 'absolute', left: 10, top: 5, width: 28, height: 28 }} />
-        <span
+        <div
             style={{
-                ...hudText,
                 position: 'absolute',
-                left: 42,
-                right: 12,
-                top: 0,
-                bottom: 0,
+                left: 2.3,
+                right: 2.3,
+                top: 3.5,
+                height: 26,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.95rem',
+                gap: 4,
             }}
         >
-            {value}
-        </span>
+            <img src={`${UI}/hud/${icon}`} alt="" style={{ width: 20, height: 20 }} />
+            <span style={{ ...hudText, fontSize: '14px', lineHeight: 1 }}>{value}</span>
+        </div>
     </div>
 );
 
@@ -398,6 +362,7 @@ const RoundButton: React.FC<RoundButtonProps> = ({ icon, size, title, onPress, h
                 hold?.(false);
             }}
             style={{
+                display: 'block',
                 width: size,
                 height: size,
                 padding: 0,
@@ -415,11 +380,11 @@ const RoundButton: React.FC<RoundButtonProps> = ({ icon, size, title, onPress, h
                 draggable={false}
                 style={{
                     position: 'absolute',
-                    inset: '18%',
-                    width: '64%',
-                    height: '64%',
+                    inset: '30%',
+                    width: '40%',
+                    height: '40%',
                     pointerEvents: 'none',
-                    transform: state === 'pressed' ? 'translateY(1px)' : undefined,
+                    transform: state === 'pressed' ? 'translateY(0.5px)' : undefined,
                 }}
             />
         </button>

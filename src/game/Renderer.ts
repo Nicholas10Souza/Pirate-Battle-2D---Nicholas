@@ -1,10 +1,12 @@
 import * as PIXI from 'pixi.js';
 import { Simulation } from './Simulation';
-import { buildIslandMap, IslandMap } from './TileMap';
+import { buildIslandMap, cellOrigin, IslandMap, landRects, TILE } from './TileMap';
 
 const BASE = '/assets/png/default';
-const TILE = 48;
 const TILE_SRC = 64;
+const WATER_SCALE = 3;
+const TONE = 0xdbdbdb;
+const SHALLOW_PAD = 50;
 
 const SHIP_SKIN = { player: 3, chaser: 2, shooter: 5 } as const;
 const SHIP_SCALE = { player: 0.8, chaser: 0.72, shooter: 0.8 } as const;
@@ -157,7 +159,7 @@ export class GameRenderer {
             width,
             height,
             backgroundColor: 0x1f9bd0,
-            resolution: Math.max(window.devicePixelRatio || 1, 2),
+            resolution: Math.max(window.devicePixelRatio || 1, 2), // canvas escalado por css
             autoDensity: true,
             antialias: true,
         });
@@ -183,9 +185,10 @@ export class GameRenderer {
             this.hudWorldContainer
         );
 
-        this.islandMap = buildIslandMap(this.sim.state.islands, width, height, TILE);
+        this.islandMap = buildIslandMap();
         await this.loadTextures();
         if (this.isDestroyed) return;
+        this.flattenGrass();
         this.buildScene(width, height);
     }
 
@@ -219,8 +222,11 @@ export class GameRenderer {
     private buildScene(width: number, height: number): void {
         // água
         this.water = new PIXI.TilingSprite({ texture: this.t(url.tile(73)), width, height });
-        this.water.tileScale.set(TILE / TILE_SRC);
+        this.water.tileScale.set(WATER_SCALE);
+        this.water.tint = TONE;
         this.bgContainer.addChild(this.water);
+        this.buildShallows(width, height);
+        this.islandsContainer.tint = TONE;
 
         // ilhas
         this.buildIslands();
@@ -241,6 +247,67 @@ export class GameRenderer {
         );
     }
 
+    private flattenGrass(): void {
+        for (const id of [39, 40]) {
+            const path = url.tile(id);
+            const tex = this.tex[path];
+            if (!tex) continue;
+            const w = tex.width;
+            const h = tex.height;
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) continue;
+            ctx.drawImage(tex.source.resource as CanvasImageSource, 0, 0, w, h);
+            const img = ctx.getImageData(0, 0, w, h);
+            const px = img.data;
+            const lum = (i: number) => px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11;
+            const rows = new Array<number>(h).fill(0);
+            const cols = new Array<number>(w).fill(0);
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const l = lum((y * w + x) * 4);
+                    rows[y] += l / w;
+                    cols[x] += l / h;
+                }
+            }
+            const mean = rows.reduce((a, b) => a + b, 0) / h;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const i = (y * w + x) * 4;
+                    const f = (mean / rows[y]) * (mean / cols[x]);
+                    px[i] = Math.min(255, px[i] * f);
+                    px[i + 1] = Math.min(255, px[i + 1] * f);
+                    px[i + 2] = Math.min(255, px[i + 2] * f);
+                }
+            }
+            ctx.putImageData(img, 0, 0);
+            this.tex[path] = PIXI.Texture.from(canvas);
+        }
+    }
+
+    private buildShallows(width: number, height: number): void {
+        const canvas = document.createElement('canvas');
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.scale(2, 2);
+        ctx.filter = 'blur(6px)';
+        ctx.fillStyle = 'rgb(217, 223, 225)';
+        for (const r of landRects()) {
+            ctx.beginPath();
+            ctx.arc(r.x + r.w / 2, r.y + r.h / 2, r.w / 2 + SHALLOW_PAD, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        const sprite = new PIXI.Sprite(PIXI.Texture.from(canvas));
+        sprite.width = width;
+        sprite.height = height;
+        sprite.alpha = 0.45;
+        this.bgContainer.addChild(sprite);
+    }
+
     private buildIslands(): void {
         this.islandsContainer.removeChildren().forEach((c) => c.destroy({ children: true }));
         const map = this.islandMap;
@@ -251,7 +318,8 @@ export class GameRenderer {
         for (const cell of map.cells) {
             const sp = new PIXI.Sprite(this.t(url.tile(cell.tileId)));
             sp.scale.set(s);
-            sp.position.set(cell.col * TILE, cell.row * TILE);
+            const o = cellOrigin(cell.col, cell.row);
+            sp.position.set(o.x, o.y);
             ground.addChild(sp);
         }
         this.islandsContainer.addChild(ground);
@@ -259,14 +327,15 @@ export class GameRenderer {
         for (const cell of map.structures) {
             const sp = new PIXI.Sprite(this.t(url.tile(cell.tileId)));
             sp.scale.set(s);
-            sp.position.set(cell.col * TILE, cell.row * TILE);
+            const o = cellOrigin(cell.col, cell.row);
+            sp.position.set(o.x, o.y);
             this.islandsContainer.addChild(sp);
         }
 
         for (const d of map.decorations) {
             const sp = new PIXI.Sprite(this.t(url.tile(d.tileId)));
             sp.anchor.set(0.5);
-            sp.scale.set(s * d.scale * 1.3);
+            sp.scale.set(s * d.scale);
             sp.rotation = d.rotation;
             sp.position.set(d.x, d.y);
             this.islandsContainer.addChild(sp);
@@ -379,7 +448,7 @@ export class GameRenderer {
         }
         for (const [id, view] of this.projectileViews) {
             if (seen.has(id)) continue;
-
+            // sumiu antes do fim da vida: acertou algo
             if (!silent && view.life > 0.06) this.spawnExplosion(view.x, view.y, 0.4);
             view.ball.destroy();
             view.trail.destroy();
