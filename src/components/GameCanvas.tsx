@@ -154,9 +154,18 @@ export const GameCanvas: React.FC = () => {
     };
 
     const [fit, setFit] = useState(1);
+    const wrapperRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const update = () => setFit(Math.min(window.innerWidth / 960, window.innerHeight / 540));
+        const update = () => {
+            if (!wrapperRef.current) return;
+            const parent = wrapperRef.current.parentElement;
+            if (parent) {
+                setFit(Math.min(parent.clientWidth / 960, parent.clientHeight / 540));
+            } else {
+                setFit(Math.min(window.innerWidth / 960, window.innerHeight / 540));
+            }
+        };
         update();
         window.addEventListener('resize', update);
         return () => window.removeEventListener('resize', update);
@@ -180,6 +189,7 @@ export const GameCanvas: React.FC = () => {
 
     return (
         <div
+            ref={wrapperRef}
             style={{
                 position: 'relative',
                 width: 960,
