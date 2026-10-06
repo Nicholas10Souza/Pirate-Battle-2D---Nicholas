@@ -127,7 +127,7 @@ export default function App() {
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        height: '100vh',
+                        height: '100dvh', // Fallback to vh on very old browsers isn't easily inline, but 100dvh is standard now. I'll use 100dvh. Wait, React inline styles override.
                         width: '100vw',
                         background: '#070f1e',
                         paddingTop: 'env(safe-area-inset-top)',
@@ -138,7 +138,9 @@ export default function App() {
                         overflow: 'hidden'
                     }}
                 >
-                    <AppContent />
+                    <div className="safe-bounds" style={{ flex: 1, width: '100%', height: '100%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <AppContent />
+                    </div>
                     
                     <div className="orientation-warning">
                         <h2>Rotacione o aparelho</h2>
