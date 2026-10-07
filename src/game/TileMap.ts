@@ -32,10 +32,23 @@ export interface Decoration {
 }
 
 export interface IslandMap {
+    shallows: LandCell[];
     cells: LandCell[];
     structures: LandCell[];
     decorations: Decoration[];
 }
+
+// ~ água rasa além da terra
+const SHALLOW = [
+    '........~......',
+    '~~.....~~......',
+    '.~....~~~......',
+    '.~....~........',
+    '.~~~~~~...~~~~~',
+    '....~~~~~~~....',
+    '....~.....~....',
+    '....~..........',
+];
 
 const piece = (col: number, row: number, tileId: number): LandCell => ({ col, row, tileId, flipX: false, flipY: false });
 
@@ -77,6 +90,41 @@ const isLand = (c: number, r: number): boolean => {
     return row[Math.min(COLS - 1, Math.max(0, c))] !== '0';
 };
 
+const inRegion = (c: number, r: number): boolean => {
+    const row = Math.min(ROWS - 1, Math.max(0, r));
+    const col = Math.min(COLS - 1, Math.max(0, c));
+    return LAYOUT[row][col] !== '0' || SHALLOW[row][col] === '~';
+};
+
+// peças 10 a 12, 26 a 28 e 42 a 44 formam o contorno; 58, 59, 74 e 75 são os cantos internos
+function buildShallows(): LandCell[] {
+    const list: LandCell[] = [];
+    for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+            if (!inRegion(col, row)) continue;
+            const n = !inRegion(col, row - 1);
+            const e = !inRegion(col + 1, row);
+            const s = !inRegion(col, row + 1);
+            const w = !inRegion(col - 1, row);
+            let id = 27;
+            if (n && w) id = 10;
+            else if (n && e) id = 12;
+            else if (s && w) id = 42;
+            else if (s && e) id = 44;
+            else if (n) id = 11;
+            else if (s) id = 43;
+            else if (w) id = 26;
+            else if (e) id = 28;
+            else if (!inRegion(col + 1, row + 1)) id = 58;
+            else if (!inRegion(col - 1, row + 1)) id = 59;
+            else if (!inRegion(col + 1, row - 1)) id = 74;
+            else if (!inRegion(col - 1, row - 1)) id = 75;
+            list.push({ col, row, tileId: id, flipX: false, flipY: false });
+        }
+    }
+    return list;
+}
+
 export function buildIslandMap(): IslandMap {
     const cells: LandCell[] = [];
     for (let row = 0; row < ROWS; row++) {
@@ -86,20 +134,7 @@ export function buildIslandMap(): IslandMap {
             cells.push({ col, row, tileId: Number(m[1]), flipX: m[2] === 'h', flipY: m[3] === 'v' });
         }
     }
-    return { cells, structures: FORTRESS, decorations: DECORATIONS };
-}
-
-// retângulos de terra para desenhar as águas rasas
-export function landRects(): { x: number; y: number; w: number; h: number }[] {
-    const list: { x: number; y: number; w: number; h: number }[] = [];
-    for (let r = -2; r <= ROWS + 1; r++) {
-        for (let c = -2; c <= COLS + 1; c++) {
-            if (!isLand(c, r)) continue;
-            const o = cellOrigin(c, r);
-            list.push({ x: o.x, y: o.y, w: TILE, h: TILE });
-        }
-    }
-    return list;
+    return { shallows: buildShallows(), cells, structures: FORTRESS, decorations: DECORATIONS };
 }
 
 // um círculo por célula de terra, para a colisão ficar igual ao desenho

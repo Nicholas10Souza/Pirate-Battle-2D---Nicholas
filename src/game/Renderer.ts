@@ -1,14 +1,14 @@
 import * as PIXI from 'pixi.js';
 import { Simulation } from './Simulation';
-import { buildIslandMap, cellOrigin, IslandMap, landRects, TILE } from './TileMap';
+import { buildIslandMap, cellOrigin, IslandMap, TILE } from './TileMap';
 
 const BASE = '/assets/png/default';
 const TILE_SRC = 64;
 const WATER_SCALE = 3;
 const TONE = 0xdbdbdb;
-const SHALLOW_PAD = 50;
 const GRASS_LUM = 125;
 
+// ship_N: N, N+6 e N+12 são os estados de dano, N+18 é o casco fantasma
 const SHIP_SKIN = { player: 3, chaser: 2, shooter: 5 } as const;
 const SHIP_SCALE = { player: 0.8, chaser: 0.72, shooter: 0.8 } as const;
 
@@ -72,9 +72,14 @@ class ShipView {
     public lastRotation = 0;
     private age = Math.random() * 10;
 
-    constructor(kind: ShipKind, skin: PIXI.Texture, scale: number, bar: HealthBar, fireTextures: PIXI.Texture[]) {
+    private readonly sprite: PIXI.Sprite;
+    private readonly skins: PIXI.Texture[];
+
+    constructor(kind: ShipKind, skins: PIXI.Texture[], scale: number, bar: HealthBar, fireTextures: PIXI.Texture[]) {
         this.kind = kind;
-        const sprite = new PIXI.Sprite(skin);
+        this.skins = skins;
+        const sprite = new PIXI.Sprite(skins[0]);
+        this.sprite = sprite;
         sprite.anchor.set(0.5);
         sprite.scale.set(scale);
         this.body.addChild(sprite, this.fire);
@@ -99,6 +104,7 @@ class ShipView {
         this.body.rotation = rotation + Math.PI / 2;
         this.bar.view.position.set(x, y - BAR.offsetY * 0.6);
         this.bar.setRatio(ratio);
+        this.sprite.texture = this.skins[ratio > 0.8 ? 0 : ratio > 0.45 ? 1 : 2];
 
         const burning = ratio < 0.5;
         this.fire.visible = burning;
@@ -178,7 +184,7 @@ export class GameRenderer {
             width,
             height,
             backgroundColor: 0x1f9bd0,
-            resolution: Math.max(window.devicePixelRatio || 1, 2),
+            resolution: Math.max(window.devicePixelRatio || 1, 2), // canvas escalado por css
             autoDensity: true,
             antialias: true,
         });
@@ -214,6 +220,7 @@ export class GameRenderer {
     private async loadTextures(): Promise<void> {
         const tileIds = new Set<number>([73]);
         const map = this.islandMap;
+        map?.shallows.forEach((c) => tileIds.add(c.tileId));
         map?.cells.forEach((c) => tileIds.add(c.tileId));
         map?.structures.forEach((c) => tileIds.add(c.tileId));
 
@@ -221,9 +228,7 @@ export class GameRenderer {
             ...[...tileIds].map(url.tile),
             ...(map?.decorations.map((d) => url.image(d.image)) ?? []),
             ...WRECK_PARTS.map(url.image),
-            url.ship(SHIP_SKIN.player),
-            url.ship(SHIP_SKIN.chaser),
-            url.ship(SHIP_SKIN.shooter),
+            ...Object.values(SHIP_SKIN).flatMap((id) => [0, 6, 12, 18].map((o) => url.ship(id + o))),
             url.cannonBall,
             ...url.fire,
             ...EXPLOSION_FRAMES,
@@ -245,7 +250,6 @@ export class GameRenderer {
         this.water.tileScale.set(WATER_SCALE);
         this.water.tint = TONE;
         this.bgContainer.addChild(this.water);
-        this.buildShallows(width, height);
         this.islandsContainer.tint = TONE;
 
         // ilhas
@@ -261,7 +265,7 @@ export class GameRenderer {
         const bar = new HealthBar(this.t(url.barFrame), this.t(barFill));
         return new ShipView(
             kind,
-            this.t(url.ship(SHIP_SKIN[kind])),
+            [0, 6, 12].map((o) => this.t(url.ship(SHIP_SKIN[kind] + o))),
             SHIP_SCALE[kind],
             bar,
             url.fire.map((p) => this.t(p))
@@ -318,33 +322,21 @@ export class GameRenderer {
         }
     }
 
-    // faixa de água rasa em volta das ilhas
-    private buildShallows(width: number, height: number): void {
-        const canvas = document.createElement('canvas');
-        canvas.width = width * 2;
-        canvas.height = height * 2;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.scale(2, 2);
-        ctx.filter = 'blur(6px)';
-        ctx.fillStyle = 'rgb(217, 223, 225)';
-        for (const r of landRects()) {
-            ctx.beginPath();
-            ctx.arc(r.x + r.w / 2, r.y + r.h / 2, r.w / 2 + SHALLOW_PAD, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        const sprite = new PIXI.Sprite(PIXI.Texture.from(canvas));
-        sprite.width = width;
-        sprite.height = height;
-        sprite.alpha = 0.45;
-        this.bgContainer.addChild(sprite);
-    }
-
     private buildIslands(): void {
         this.islandsContainer.removeChildren().forEach((c) => c.destroy({ children: true }));
         const map = this.islandMap;
         if (!map) return;
         const s = TILE / TILE_SRC;
+
+        const shallow = new PIXI.Container();
+        for (const cell of map.shallows) {
+            const sp = new PIXI.Sprite(this.t(url.tile(cell.tileId)));
+            const o = cellOrigin(cell.col, cell.row);
+            sp.scale.set(s);
+            sp.position.set(o.x, o.y);
+            shallow.addChild(sp);
+        }
+        this.islandsContainer.addChild(shallow);
 
         const ground = new PIXI.Container();
         for (const cell of map.cells) {
@@ -403,13 +395,13 @@ export class GameRenderer {
         }
     }
 
+    // casco fantasma que afunda, destroços, marinheiros e um bote à deriva
     private sink(view: ShipView): void {
         const node = new PIXI.Container();
         const base = SHIP_SCALE[view.kind];
-        const ghost = new PIXI.Sprite(this.t(url.ship(SHIP_SKIN[view.kind])));
+        const ghost = new PIXI.Sprite(this.t(url.ship(SHIP_SKIN[view.kind] + 18)));
         ghost.anchor.set(0.5);
-        ghost.tint = 0x6f8494;
-        ghost.alpha = 0.6;
+        ghost.alpha = 0.8;
         ghost.scale.set(base);
         ghost.position.set(view.lastX, view.lastY);
         ghost.rotation = view.lastRotation + Math.PI / 2;
@@ -447,7 +439,7 @@ export class GameRenderer {
             tick: (dt) => {
                 age += dt;
                 const sinking = Math.min(1, age / 2.4);
-                ghost.alpha = 0.6 * (1 - sinking);
+                ghost.alpha = 0.8 * (1 - sinking);
                 ghost.scale.set(base * (1 - 0.1 * sinking));
                 const fade = Math.min(1, total - age);
                 for (const d of drifters) {
@@ -493,6 +485,7 @@ export class GameRenderer {
         }
         this.lastPlayerHealth = p.health;
 
+        // timeRemaining subiu: partida reiniciada
         const restarted = state.timeRemaining > this.lastTimeRemaining;
         this.lastTimeRemaining = state.timeRemaining;
 
@@ -557,6 +550,7 @@ export class GameRenderer {
         }
         for (const [id, view] of this.projectileViews) {
             if (seen.has(id)) continue;
+
             if (!silent && view.life > 0.06) this.spawnExplosion(view.x, view.y, 0.4);
             view.ball.destroy();
             view.trail.destroy();
