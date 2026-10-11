@@ -1,4 +1,5 @@
 import { GameConfig, GameState, ProjectileEntity, EnemyEntity } from './types';
+import { buildIslandColliders } from './TileMap';
 
 export class Simulation {
     public state: GameState;
@@ -42,17 +43,7 @@ export class Simulation {
             },
             enemies: [],
             projectiles: [],
-            islands: [
-                // Fortaleza e terra no canto superior esquerdo
-                { id: 'fort-1', position: { x: 190, y: 140 }, radius: 175 },
-                { id: 'fort-pier', position: { x: 330, y: 90 }, radius: 110 },
-                { id: 'fort-sand', position: { x: 190, y: 320 }, radius: 105 },
-
-                // Ilha e litoral no canto inferior e direito
-                { id: 'island-bottom-1', position: { x: 500, y: 690 }, radius: 170 },
-                { id: 'island-bottom-2', position: { x: 820, y: 680 }, radius: 180 },
-                { id: 'island-bottom-point', position: { x: 890, y: 550 }, radius: 115 },
-            ],
+            islands: buildIslandColliders(),
             score: 0,
             timeRemaining: this.config.sessionTime,
             isPaused: false,

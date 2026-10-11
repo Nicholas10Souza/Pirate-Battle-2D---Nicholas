@@ -1,4 +1,6 @@
 export const TILE = 68;
+export const SHALLOW_TILE = 17;
+const SHALLOW_REACH = 44;
 const ORIGIN = { x: -33, y: -5 };
 
 const LAYOUT = [
@@ -15,7 +17,7 @@ const LAYOUT = [
 const ROWS = LAYOUT.length;
 const COLS = LAYOUT[0].length;
 
-export interface LandCell {
+export interface Cell {
     col: number;
     row: number;
     tileId: number;
@@ -32,28 +34,16 @@ export interface Decoration {
 }
 
 export interface IslandMap {
-    shallows: LandCell[];
-    cells: LandCell[];
-    structures: LandCell[];
+    shallows: Cell[];
+    cells: Cell[];
+    structures: Cell[];
     decorations: Decoration[];
 }
 
-// ~ água rasa além da terra
-const SHALLOW = [
-    '........~......',
-    '~~.....~~......',
-    '.~....~~~......',
-    '.~....~........',
-    '.~~~~~~...~~~~~',
-    '....~~~~~~~....',
-    '....~.....~....',
-    '....~..........',
-];
+const piece = (col: number, row: number, tileId: number): Cell => ({ col, row, tileId, flipX: false, flipY: false });
 
-const piece = (col: number, row: number, tileId: number): LandCell => ({ col, row, tileId, flipX: false, flipY: false });
-
-// torres 93 94 78, muros 15 16, canhão 31, ponte 76
-const FORTRESS: LandCell[] = [
+// torres, muros, canhão, ponte.
+const FORTRESS: Cell[] = [
     piece(1, 0, 93),
     piece(2, 0, 16),
     piece(3, 0, 78),
@@ -84,28 +74,79 @@ export function cellOrigin(col: number, row: number): { x: number; y: number } {
     return { x: col * TILE + ORIGIN.x, y: row * TILE + ORIGIN.y };
 }
 
-// fora da grade repete a borda, a ilha continua além da tela
+export function shallowOrigin(col: number, row: number): { x: number; y: number } {
+    return { x: col * SHALLOW_TILE + ORIGIN.x, y: row * SHALLOW_TILE + ORIGIN.y };
+}
+
 const isLand = (c: number, r: number): boolean => {
     const row = LAYOUT[Math.min(ROWS - 1, Math.max(0, r))];
     return row[Math.min(COLS - 1, Math.max(0, c))] !== '0';
 };
 
-const inRegion = (c: number, r: number): boolean => {
-    const row = Math.min(ROWS - 1, Math.max(0, r));
-    const col = Math.min(COLS - 1, Math.max(0, c));
-    return LAYOUT[row][col] !== '0' || SHALLOW[row][col] === '~';
-};
+function near(x: number, y: number, reach: number): boolean {
+    const c0 = Math.floor((x - ORIGIN.x) / TILE);
+    const r0 = Math.floor((y - ORIGIN.y) / TILE);
+    for (let r = r0 - 1; r <= r0 + 1; r++) {
+        for (let c = c0 - 1; c <= c0 + 1; c++) {
+            if (!isLand(c, r)) continue;
+            const o = cellOrigin(c, r);
+            const dx = Math.max(o.x - x, 0, x - (o.x + TILE));
+            const dy = Math.max(o.y - y, 0, y - (o.y + TILE));
+            if (dx * dx + dy * dy <= reach * reach) return true;
+        }
+    }
+    return false;
+}
 
-// peças 10 a 12, 26 a 28 e 42 a 44 formam o contorno; 58, 59, 74 e 75 são os cantos internos
-function buildShallows(): LandCell[] {
-    const list: LandCell[] = [];
-    for (let row = 0; row < ROWS; row++) {
-        for (let col = 0; col < COLS; col++) {
-            if (!inRegion(col, row)) continue;
-            const n = !inRegion(col, row - 1);
-            const e = !inRegion(col + 1, row);
-            const s = !inRegion(col, row + 1);
-            const w = !inRegion(col - 1, row);
+function buildShallows(width: number, height: number): Cell[] {
+    const min = -2;
+    const cols = Math.ceil((width - ORIGIN.x) / SHALLOW_TILE) + 4;
+    const rows = Math.ceil((height - ORIGIN.y) / SHALLOW_TILE) + 4;
+    const center = (i: number, j: number) => {
+        const o = shallowOrigin(i + min, j + min);
+        return { x: o.x + SHALLOW_TILE / 2, y: o.y + SHALLOW_TILE / 2 };
+    };
+
+    const grid: boolean[][] = [];
+    for (let j = 0; j < rows; j++) {
+        grid.push([]);
+        for (let i = 0; i < cols; i++) {
+            const p = center(i, j);
+            grid[j].push(near(p.x, p.y, SHALLOW_REACH));
+        }
+    }
+    const at = (i: number, j: number) => grid[Math.min(rows - 1, Math.max(0, j))][Math.min(cols - 1, Math.max(0, i))];
+
+    for (let pass = 0; pass < 8; pass++) {
+        let changed = false;
+        for (let j = 0; j < rows; j++) {
+            for (let i = 0; i < cols; i++) {
+                const here = grid[j][i];
+                const gap = (at(i - 1, j) && at(i + 1, j)) || (at(i, j - 1) && at(i, j + 1));
+                const spur = (!at(i - 1, j) && !at(i + 1, j)) || (!at(i, j - 1) && !at(i, j + 1));
+                const p = center(i, j);
+                let next = here;
+                if (!here && gap) next = true;
+                else if (here && spur && !near(p.x, p.y, 0)) next = false;
+                if (next !== here) {
+                    grid[j][i] = next;
+                    changed = true;
+                }
+            }
+        }
+        if (!changed) break;
+    }
+
+    const list: Cell[] = [];
+    for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+            if (!grid[j][i]) continue;
+            const o = shallowOrigin(i + min, j + min);
+            if (o.x + SHALLOW_TILE <= 0 || o.x >= width || o.y + SHALLOW_TILE <= 0 || o.y >= height) continue;
+            const n = !at(i, j - 1);
+            const e = !at(i + 1, j);
+            const s = !at(i, j + 1);
+            const w = !at(i - 1, j);
             let id = 27;
             if (n && w) id = 10;
             else if (n && e) id = 12;
@@ -115,18 +156,18 @@ function buildShallows(): LandCell[] {
             else if (s) id = 43;
             else if (w) id = 26;
             else if (e) id = 28;
-            else if (!inRegion(col + 1, row + 1)) id = 58;
-            else if (!inRegion(col - 1, row + 1)) id = 59;
-            else if (!inRegion(col + 1, row - 1)) id = 74;
-            else if (!inRegion(col - 1, row - 1)) id = 75;
-            list.push({ col, row, tileId: id, flipX: false, flipY: false });
+            else if (!at(i + 1, j + 1)) id = 58;
+            else if (!at(i - 1, j + 1)) id = 59;
+            else if (!at(i + 1, j - 1)) id = 74;
+            else if (!at(i - 1, j - 1)) id = 75;
+            list.push({ col: i + min, row: j + min, tileId: id, flipX: false, flipY: false });
         }
     }
     return list;
 }
 
-export function buildIslandMap(): IslandMap {
-    const cells: LandCell[] = [];
+export function buildIslandMap(width: number, height: number): IslandMap {
+    const cells: Cell[] = [];
     for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
             const m = /^(\d+)(h?)(v?)$/.exec(LAYOUT[row][col]);
@@ -134,10 +175,10 @@ export function buildIslandMap(): IslandMap {
             cells.push({ col, row, tileId: Number(m[1]), flipX: m[2] === 'h', flipY: m[3] === 'v' });
         }
     }
-    return { shallows: buildShallows(), cells, structures: FORTRESS, decorations: DECORATIONS };
+    return { shallows: buildShallows(width, height), cells, structures: FORTRESS, decorations: DECORATIONS };
 }
 
-// um círculo por célula de terra, para a colisão ficar igual ao desenho
+// Círculo por célula de terra, para a colisão ficar igual ao desenho
 export function buildIslandColliders() {
     const list: { id: string; position: { x: number; y: number }; radius: number }[] = [];
     for (let r = 0; r < ROWS; r++) {
