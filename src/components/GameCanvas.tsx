@@ -46,12 +46,12 @@ export const GameCanvas: React.FC = () => {
 
             if (sim.state.isPaused || sim.state.isGameOver) return;
 
-            if (['ArrowUp', 'KeyW'].includes(e.code)) keysRef.current.forward = true;
+            if (e.code === 'ArrowUp') keysRef.current.forward = true;
             if (['ArrowDown', 'KeyS'].includes(e.code)) keysRef.current.reverse = true;
             if (['ArrowLeft', 'KeyA'].includes(e.code)) keysRef.current.left = true;
             if (['ArrowRight', 'KeyD'].includes(e.code)) keysRef.current.right = true;
 
-            if (['Space', 'KeyJ'].includes(e.code)) {
+            if (['KeyW', 'Space', 'KeyJ'].includes(e.code)) {
                 if (sim.fireFront()) sound.play('cannon_fire_1', 0.8);
             }
 
@@ -65,7 +65,7 @@ export const GameCanvas: React.FC = () => {
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
-            if (['ArrowUp', 'KeyW'].includes(e.code)) keysRef.current.forward = false;
+            if (e.code === 'ArrowUp') keysRef.current.forward = false;
             if (['ArrowDown', 'KeyS'].includes(e.code)) keysRef.current.reverse = false;
             if (['ArrowLeft', 'KeyA'].includes(e.code)) keysRef.current.left = false;
             if (['ArrowRight', 'KeyD'].includes(e.code)) keysRef.current.right = false;
@@ -243,7 +243,7 @@ export const GameCanvas: React.FC = () => {
                 <RoundButton icon="icon_turn_left.png" size={40} title="Leme bombordo (A)" hold={press('left')} />
             </div>
             <div style={{ ...absB(60, 52), zIndex: 20 }}>
-                <RoundButton icon="icon_forward.png" size={40} title="Velas (W)" hold={press('forward')} />
+                <RoundButton icon="icon_forward.png" size={40} title="Velas (↑)" hold={press('forward')} />
             </div>
             <div style={{ ...absB(104.8, 28), zIndex: 20 }}>
                 <RoundButton icon="icon_turn_right.png" size={40} title="Leme estibordo (D)" hold={press('right')} />
@@ -251,7 +251,7 @@ export const GameCanvas: React.FC = () => {
 
             {/* Controles de artilharia */}
             <div style={{ ...absB(860, 52), zIndex: 20 }}>
-                <RoundButton icon="icon_fire_front.png" size={40} title="Disparo frontal (Espaço / J)" onPress={triggerFrontFire} />
+                <RoundButton icon="icon_fire_front.png" size={40} title="Disparo frontal (W / Espaço / J)" onPress={triggerFrontFire} />
             </div>
             <div style={{ ...absB(815.5, 28), zIndex: 20 }}>
                 <RoundButton icon="icon_fire_left.png" size={40} title="Bordada esquerda (Q / U)" onPress={() => triggerBroadside('left')} />
